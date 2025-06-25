@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交底书查新</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        /* 确保固定按钮在最上层 */
+        .fixed {
+            z-index: 9999;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        .tab-active {
+            color: #0284c7;
+            border-bottom: 2px solid #0284c7;
+        }
+        .patent-item:hover {
+            background-color: #f0f9ff;
+        }
+        .patent-selected {
+            background-color: #e0f2fe;
+            border-left: 3px solid #0284c7;
+        }
+        .resizer {
+            width: 5px;
+            cursor: col-resize;
+            background-color: #e5e7eb;
+        }
+        .resizer:hover {
+            background-color: #d1d5db;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* 滚动条样式 - 完全隐藏 */
+        .scrollbar-thin::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-thin {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 最接近现有技术按钮样式 - 低调融入版 */
+        .closest-art-btn {
+            background: transparent;
+            border: 0px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .closest-art-btn:hover {
+            background: #f9fafb;
+            border-color: #d1d5db;
+            color: #4b5563;
+        }
+
+        .closest-art-selected {
+            background: #f3f4f6 !important;
+            border-color: #9ca3af !important;
+            color: #374151 !important;
+            font-weight: 500;
+        }
+
+        .closest-art-selected:hover {
+            background: #e5e7eb !important;
+            border-color: #6b7280 !important;
+        }
+
+        .closest-art-selected .ri-star-line {
+            color: #f59e0b;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .closest-art-btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+            }
+            
+            .closest-art-btn span {
+                display: none;
+            }
+            
+            .closest-art-btn::after {
+                content: "最接近";
+            }
+        }
+        
+        /* 全局滚动条样式 - 适用于所有元素 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-black">
+    <div class="flex flex-col h-screen overflow-hidden">             
+        <!-- 主体内容区 -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- 查新比对页 -->
+            <div id="compareSection" class="w-full h-full flex flex-col bg-white border-t">
+                <!-- 比对区内容 -->
+                <div class="flex-1 min-h-0">
+                    <div class="h-full flex overflow-hidden">
+                        <!-- 左侧对比内容区域 -->
+                        <div class="flex-1 p-1 bg-gray-50 overflow-y-auto scrollbar-thin border-r border-gray-200">
+                            <!-- 比对区标题栏 -->
+                            <div class="p-4 border-b bg-white flex-shrink-0">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div>
+                                            <h2 class="text-xl font-medium">查新比对：一种基于深度学习的智能语音识别系统</h2>
+                                            <p class="text-sm text-gray-500 mt-1">创建时间：2023-11-15</p>
+                                        </div>
+                                    </div>
+                                    <!-- <div class="flex items-center space-x-4">
+                                        <button id="exportReportBtn" class="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center transition-colors">
+                                            <i class="ri-file-download-line mr-1"></i>导出报告
+                                        </button>
+                                        <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center">
+                                            <i class="ri-download-line mr-1"></i> 生成查新报告
+                                        </button>
+                                    </div> -->
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <!-- 对比文件1 -->
+                                <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                                    <h3 class=" font-medium mb-2 text-primary-700 flex items-center justify-between">
+                                        <span>对比文件1: 基于深度学习的多方言语音识别方法及系统</span>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="radio" name="closestPriorArt" value="1" id="closest-1" class="hidden" checked onchange="updateClosestPriorArt(this.value)">
+                                            <label for="closest-1" class="closest-art-btn closest-art-selected cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center space-x-1.5">
+                                                <i class="ri-star-line text-sm"></i>
+                                                <span>最接近现有技术</span>
+                                            </label>
+                                        </div>
+                                    </h3>
+                                    <div class="overflow-x-auto mb-4">
+                                        <table class="min-w-full text-xs border-collapse">
+                                            <thead>
+                                                <tr class="bg-gray-100">
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200"></th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">交底书</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">对比文件</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">区别点</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">是否构成实质性区别</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术问题</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境下识别准确率低</li>
+                                                            <li class="leading-6">方言和口音适应性差</li>
+                                                            <li class="leading-6">处理速度慢</li>
+                                                            <li class="leading-6">难以识别专业领域术语</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">多方言识别能力有限</li>
+                                                            <li class="leading-6">方言识别准确率低</li>
+                                                            <li class="leading-6">模型体积大</li>
+                                                            <li class="leading-6">计算资源消耗高</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">交底书关注嘈杂环境和专业术语识别</li>
+                                                            <li class="leading-6">对比文件聚焦多方言识别和资源消耗</li>
+                                                            <li class="leading-6">两者都关注方言适应性问题</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-1-1" 
+                                                                data-content="交底书关注嘈杂环境和专业术语识别" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-1-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-1-2" 
+                                                                data-content="对比文件聚焦多方言识别和资源消耗" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-1-2')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-1-3" 
+                                                                data-content="两者都关注方言适应性问题" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-1-3')"></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术方案</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">多通道麦克风阵列和噪声抑制</li>
+                                                            <li class="leading-6">改进的Transformer架构声学模型</li>
+                                                            <li class="leading-6">多方言适应性训练模块</li>
+                                                            <li class="leading-6">轻量化神经网络和模型量化</li>
+                                                            <li class="leading-6">专业术语识别增强模块</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">方言特征提取模块</li>
+                                                            <li class="leading-6">双向LSTM和注意力机制架构</li>
+                                                            <li class="leading-6">方言自适应训练框架</li>
+                                                            <li class="leading-6">参数共享和剪枝技术</li>
+                                                            <li class="leading-6">多模型融合策略</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">模型架构不同：Transformer vs LSTM</li>
+                                                            <li class="leading-6">优化方向不同：量化技术 vs 参数共享</li>
+                                                            <li class="leading-6">交底书独有噪声抑制和术语识别</li>
+                                                            <li class="leading-6">对比文件独有多模型融合策略</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-1-1" 
+                                                                data-content="模型架构不同：Transformer vs LSTM" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-1-1')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-1-2" 
+                                                                data-content="优化方向不同：量化技术 vs 参数共享" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-1-2')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-1-3" 
+                                                                data-content="交底书独有噪声抑制和术语识别" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-1-3')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-1-4" 
+                                                                data-content="对比文件独有多模型融合策略" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-1-4')"></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术效果</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境识别准确率提高15%</li>
+                                                            <li class="leading-6">新口音适应训练时间缩短60%</li>
+                                                            <li class="leading-6">处理速度提高30%</li>
+                                                            <li class="leading-6">专业术语识别准确率提高25%</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">方言识别准确率提高12%</li>
+                                                            <li class="leading-6">新方言适应训练时间缩短50%</li>
+                                                            <li class="leading-6">模型体积减小40%</li>
+                                                            <li class="leading-6">移动设备上实现实时识别</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">交底书在嘈杂环境和术语识别方面优势明显</li>
+                                                            <li class="leading-6">交底书适应训练效率更高(60%>50%)</li>
+                                                            <li class="leading-6">对比文件在模型体积减小方面效果更好</li>
+                                                            <li class="leading-6">两者优化侧重点不同：速度 vs 资源</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-1-1" 
+                                                                data-content="交底书在嘈杂环境和术语识别方面优势明显" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-1-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-1-2" 
+                                                                data-content="交底书适应训练效率更高(60%>50%)" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-1-2')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-1-3" 
+                                                                data-content="对比文件在模型体积减小方面效果更好" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-1-3')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-1-4" 
+                                                                data-content="两者优化侧重点不同：速度 vs 资源" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-1-4')" checked></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- 修改建议 -->
+                                    <!-- <div class="bg-green-50 p-3 rounded-lg">
+                                        <h4 class="text-sm font-medium text-green-800 mb-2">交底书修改建议</h4>
+                                        <ul class="list-disc list-inside text-xs text-green-800">
+                                            <li>可考虑结合对比文件的参数共享和剪枝技术，进一步减小模型体积</li>
+                                            <li>借鉴多模型融合策略，提高复杂场景下的识别准确率</li>
+                                            <li>增强移动设备适配性，实现更低资源消耗的实时处理</li>
+                                            <li>明确说明交底书在嘈杂环境和专业术语识别方面的技术优势</li>
+                                        </ul>
+                                        <button class="mt-2 text-primary-600 hover:text-primary-700 text-xs flex items-center">
+                                            <i class="ri-arrow-left-line mr-2"></i> 插入对话
+                                        </button>
+                                    </div> -->
+                                </div>
+                                
+                                <!-- 对比文件2 -->
+                                <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                                    <h3 class="font-medium mb-2 text-primary-700 flex items-center justify-between">
+                                        <span>对比文件2: 一种噪声环境下的语音识别优化方法</span>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="radio" name="closestPriorArt" value="2" id="closest-2" class="hidden" onchange="updateClosestPriorArt(this.value)">
+                                            <label for="closest-2" class="closest-art-btn cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center space-x-1.5">
+                                                <i class="ri-star-line text-sm"></i>
+                                                <span>设为最接近现有技术</span>
+                                            </label>
+                                        </div>
+                                    </h3>    
+                                    <div class="overflow-x-auto mb-4">
+                                        <table class="min-w-full text-xs border-collapse">
+                                            <thead>
+                                                <tr class="bg-gray-100">
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200"></th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">交底书</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">对比文件</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">区别点</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">是否构成实质性区别</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术问题</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境下识别准确率低</li>
+                                                            <li class="leading-6">方言和口音适应性差</li>
+                                                            <li class="leading-6">处理速度慢</li>
+                                                            <li class="leading-6">难以识别专业领域术语</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境下识别准确率低</li>
+                                                            <li class="leading-6">噪声干扰严重影响识别效果</li>
+                                                            <li class="leading-6">现有滤波算法计算复杂度高</li>
+                                                            <li class="leading-6">实时性能不足</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">两者都关注嘈杂环境识别问题</li>
+                                                            <li class="leading-6">对比文件更专注于噪声处理</li>
+                                                            <li class="leading-6">交底书额外关注方言适应和术语识别</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-2-1" 
+                                                                data-content="两者都关注嘈杂环境识别问题" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-2-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-2-2" 
+                                                                data-content="对比文件更专注于噪声处理" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-2-2')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-2-3" 
+                                                                data-content="交底书额外关注方言适应和术语识别" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-2-3')" checked></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术特征</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">多通道麦克风阵列和噪声抑制</li>
+                                                            <li class="leading-6">改进的Transformer架构声学模型</li>
+                                                            <li class="leading-6">多方言适应性训练模块</li>
+                                                            <li class="leading-6">轻量化神经网络和模型量化</li>
+                                                            <li class="leading-6">专业术语识别增强模块</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">自适应滤波算法</li>
+                                                            <li class="leading-6">多通道麦克风阵列</li>
+                                                            <li class="leading-6">声源定位技术</li>
+                                                            <li class="leading-6">深度神经网络噪声抑制</li>
+                                                            <li class="leading-6">低延迟信号处理框架</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">对比文件在噪声处理方面更专业</li>
+                                                            <li class="leading-6">交底书采用Transformer架构</li>
+                                                            <li class="leading-6">交底书独有方言适应和术语识别</li>
+                                                            <li class="leading-6">对比文件独有声源定位技术</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-2-1" 
+                                                                data-content="对比文件在噪声处理方面更专业" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-2-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-2-2" 
+                                                                data-content="交底书采用Transformer架构" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-2-2')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-2-3" 
+                                                                data-content="交底书独有方言适应和术语识别" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-2-3')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-2-4" 
+                                                                data-content="对比文件独有声源定位技术" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-2-4')"></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术效果</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境识别准确率提高15%</li>
+                                                            <li class="leading-6">新口音适应训练时间缩短60%</li>
+                                                            <li class="leading-6">处理速度提高30%</li>
+                                                            <li class="leading-6">专业术语识别准确率提高25%</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">噪声环境下识别准确率提高18%</li>
+                                                            <li class="leading-6">信噪比提升10dB以上</li>
+                                                            <li class="leading-6">计算复杂度降低45%</li>
+                                                            <li class="leading-6">端到端延迟降低50%</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">对比文件在噪声环境识别提升更大(18%>15%)</li>
+                                                            <li class="leading-6">对比文件在延迟和计算复杂度优化更显著</li>
+                                                            <li class="leading-6">交底书在方言适应和术语识别方面有独特优势</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-2-1" 
+                                                                data-content="对比文件在噪声环境识别提升更大(18%>15%)" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-2-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-2-2" 
+                                                                data-content="对比文件在延迟和计算复杂度优化更显著" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-2-2')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-2-3" 
+                                                                data-content="交底书在方言适应和术语识别方面有独特优势" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-2-3')" checked></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- 修改建议 -->
+                                    <!-- <div class="bg-green-50 p-3 rounded-lg">
+                                        <h4 class="text-sm font-medium text-green-800 mb-2">交底书修改建议</h4>
+                                        <ul class="list-disc list-inside text-xs text-green-800">
+                                            <li>借鉴对比文件的自适应滤波算法和声源定位技术，提高噪声抑制效果</li>
+                                            <li>优化信号处理框架，进一步降低端到端延迟</li>
+                                            <li>结合两种技术路线，提高嘈杂环境下的识别准确率</li>
+                                            <li>考虑增加信噪比指标的量化评估</li>
+                                        </ul>
+                                        <button class="mt-2 text-primary-600 hover:text-primary-700 text-xs flex items-center">
+                                            <i class="ri-arrow-left-line mr-2"></i> 插入对话
+                                        </button>
+                                    </div> -->
+                                </div>
+
+                                <!-- 对比文件3 -->
+                                <div class="bg-white rounded-lg shadow-sm p-4">
+                                    <h3 class="font-medium mb-2 text-primary-700 flex items-center justify-between">
+                                        <span>对比文件3: 专业领域术语识别增强系统</span>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="radio" name="closestPriorArt" value="3" id="closest-3" class="hidden" onchange="updateClosestPriorArt(this.value)">
+                                            <label for="closest-3" class="closest-art-btn cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center space-x-1.5">
+                                                <i class="ri-star-line text-sm"></i>
+                                                <span>设为最接近现有技术</span>
+                                            </label>
+                                        </div>
+                                    </h3>    
+                                    <div class="overflow-x-auto mb-4">
+                                        <table class="min-w-full text-xs border-collapse">
+                                            <thead>
+                                                <tr class="bg-gray-100">
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200"></th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">交底书</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">对比文件</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">区别点</th>
+                                                    <th class="py-2 px-3 text-left font-medium text-gray-700 border border-gray-200">是否构成实质性区别</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术问题</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境下识别准确率低</li>
+                                                            <li class="leading-6">方言和口音适应性差</li>
+                                                            <li class="leading-6">处理速度慢</li>
+                                                            <li class="leading-6">难以识别专业领域术语</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">专业领域术语识别准确率低</li>
+                                                            <li class="leading-6">领域知识整合不足</li>
+                                                            <li class="leading-6">术语发音变体处理能力弱</li>
+                                                            <li class="leading-6">跨领域迁移能力差</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">两者都关注专业术语识别问题</li>
+                                                            <li class="leading-6">对比文件专注于术语识别和领域知识</li>
+                                                            <li class="leading-6">交底书额外关注噪声和方言适应</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-3-1" 
+                                                                data-content="两者都关注专业术语识别问题" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-3-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-3-2" 
+                                                                data-content="对比文件专注于术语识别和领域知识" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-3-2')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="problem-3-3" 
+                                                                data-content="交底书额外关注噪声和方言适应" 
+                                                                onchange="toggleSubstantialDifference(this, 'problem-3-3')" checked></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术特征</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">多通道麦克风阵列和噪声抑制</li>
+                                                            <li class="leading-6">改进的Transformer架构声学模型</li>
+                                                            <li class="leading-6">多方言适应性训练模块</li>
+                                                            <li class="leading-6">轻量化神经网络和模型量化</li>
+                                                            <li class="leading-6">专业术语识别增强模块</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">领域知识图谱构建</li>
+                                                            <li class="leading-6">术语发音变体模型</li>
+                                                            <li class="leading-6">上下文语义理解模块</li>
+                                                            <li class="leading-6">领域自适应微调机制</li>
+                                                            <li class="leading-6">多模态信息融合</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">对比文件在术语识别方面更专业</li>
+                                                            <li class="leading-6">对比文件独有知识图谱和多模态融合</li>
+                                                            <li class="leading-6">交底书独有噪声抑制和方言适应</li>
+                                                            <li class="leading-6">两者在领域适应方面采用不同技术路线</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-3-1" 
+                                                                data-content="对比文件在术语识别方面更专业" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-3-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-3-2" 
+                                                                data-content="对比文件独有知识图谱和多模态融合" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-3-2')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-3-3" 
+                                                                data-content="交底书独有噪声抑制和方言适应" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-3-3')" checked></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="feature-3-4" 
+                                                                data-content="两者在领域适应方面采用不同技术路线" 
+                                                                onchange="toggleSubstantialDifference(this, 'feature-3-4')"></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="py-2 px-3 align-top font-medium border border-gray-200 bg-gray-50">技术效果</td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">嘈杂环境识别准确率提高15%</li>
+                                                            <li class="leading-6">新口音适应训练时间缩短60%</li>
+                                                            <li class="leading-6">处理速度提高30%</li>
+                                                            <li class="leading-6">专业术语识别准确率提高25%</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200">
+                                                        <ul class="list-disc list-inside">
+                                                            <li class="leading-6">专业术语识别准确率提高35%</li>
+                                                            <li class="leading-6">新领域适应时间缩短70%</li>
+                                                            <li class="leading-6">罕见术语识别率提高40%</li>
+                                                            <li class="leading-6">跨领域迁移效果提升50%</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-disc list-inside text-blue-800">
+                                                            <li class="leading-6">对比文件在术语识别方面效果更好(35%>25%)</li>
+                                                            <li class="leading-6">对比文件在领域适应和迁移方面优势明显</li>
+                                                            <li class="leading-6">交底书在综合语音识别方面更全面</li>
+                                                        </ul>
+                                                    </td>
+                                                    <td class="py-2 px-3 align-top border border-gray-200 bg-blue-50">
+                                                        <ul class="list-none text-blue-800">
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-3-1" 
+                                                                data-content="对比文件在术语识别方面效果更好(35%>25%)" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-3-1')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-3-2" 
+                                                                data-content="对比文件在领域适应和迁移方面优势明显" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-3-2')"></li>
+                                                            <li class="leading-6"><input type="checkbox" class="substantial-diff-checkbox mr-2 mt-1" 
+                                                                data-diff-id="effect-3-3" 
+                                                                data-content="交底书在综合语音识别方面更全面" 
+                                                                onchange="toggleSubstantialDifference(this, 'effect-3-3')" checked></li>
+                                                        </ul>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- 修改建议 -->
+                                    <!-- <div class="bg-green-50 p-3 rounded-lg">
+                                        <h4 class="text-sm font-medium text-green-800 mb-2">交底书修改建议</h4>
+                                        <ul class="list-disc list-inside text-xs text-green-800">
+                                            <li>引入领域知识图谱和术语发音变体模型，提高专业术语识别准确率</li>
+                                            <li>增加上下文语义理解能力，提升复杂语境下的识别效果</li>
+                                            <li>借鉴多模态信息融合技术，增强系统鲁棒性</li>
+                                            <li>优化领域适应机制，缩短新领域适应时间</li>
+                                        </ul>
+                                        <button class="mt-2 text-primary-600 hover:text-primary-700 text-xs flex items-center">
+                                            <i class="ri-arrow-left-line mr-2"></i> 插入对话
+                                        </button>
+                                    </div> -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-1/3 bg-gray-50 flex flex-col h-full relative">
+                            <div class="flex-1 overflow-y-auto scrollbar-thin pb-20">
+                                <div class="p-1">
+                                    <div class="bg-white rounded-lg shadow-sm p-4">
+                                        <!-- 标题和说明 -->
+                                        <div class="mb-6">
+                                            <h3 class="text-lg font-medium mb-2 text-gray-800 flex items-center">
+                                                <i class="ri-focus-3-line mr-2 text-blue-600"></i>查新对比结论
+                                            </h3>
+                                        </div>
+                        
+                                        <!-- 查新结论 -->
+                                        <div class="mb-6 border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
+                                            <!-- 动态内容-->
+                                        </div>
+                        
+                                        <!-- 修改建议 - 可编辑版本 -->
+                                        <div class="border border-gray-200 rounded-lg p-3 bg-blue-100 shadow-sm">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h4 class="font-medium text-gray-800 flex items-center">
+                                                    <i class="ri-lightbulb-line text-amber-500 mr-2"></i>
+                                                    修改建议
+                                                </h4>
+                                                <button id="editSuggestionsBtn" onclick="toggleSuggestionsEdit()" class="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                                                    <i class="ri-edit-line mr-1"></i>编辑
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- 显示模式 -->
+                                            <div id="suggestionsDisplay">
+                                                <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+                                                    <li>可考虑结合对比文件的参数共享和剪枝技术，进一步减小模型体积</li>
+                                                    <li>借鉴多模型融合策略，提高复杂场景下的识别准确率</li>
+                                                    <li>增强移动设备适配性，实现更低资源消耗的实时处理</li>
+                                                    <li>明确说明交底书在嘈杂环境和专业术语识别方面的技术优势</li>
+                                                </ul>
+                                            </div>
+                                            
+                                            <!-- 编辑模式 -->
+                                            <div id="suggestionsEdit" class="hidden">
+                                                <textarea id="suggestionsTextarea" class="w-full h-32 p-2 border border-gray-300 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入修改建议，每行一条建议...">可考虑结合对比文件的参数共享和剪枝技术，进一步减小模型体积
+                                        借鉴多模型融合策略，提高复杂场景下的识别准确率
+                                        增强移动设备适配性，实现更低资源消耗的实时处理
+                                        明确说明交底书在嘈杂环境和专业术语识别方面的技术优势</textarea>
+                                                <div class="flex space-x-2 mt-2">
+                                                    <button onclick="saveSuggestions()" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                                                        <i class="ri-save-line mr-1"></i>保存
+                                                    </button>
+                                                    <button onclick="cancelSuggestionsEdit()" class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                                                        <i class="ri-close-line mr-1"></i>取消
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 固定在右侧区域底部的操作按钮 -->
+                            <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-3">
+                                <div class="flex space-x-2">
+                                    <button onclick="generateReport()" class="flex-1 px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
+                                        <i class="ri-save-line mr-1"></i>
+                                        生成查新报告
+                                    </button>
+                                    <button onclick="modifyDisclosure()" class="flex-1 px-2 py-2 text-xs bg-green-200 text-gray-700 rounded-lg hover:bg-green-300 transition-colors flex items-center justify-center" title="重置内容">
+                                        <i class="ri-delete-bin-line mr-1"></i>
+                                        修改交底书
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 存储选中的差异点
+        const selectedDiffs = {
+            problem: [],
+            feature: [],
+            effect: []
+        };
+
+        // 存储最接近现有技术的文件号，默认为1
+        let closestPriorArtFile = '1';
+
+        // 更新最接近现有技术的文件号
+        function updateClosestPriorArt(fileNum) {
+            closestPriorArtFile = fileNum;
+            
+            // 更新按钮样式
+            document.querySelectorAll('.closest-art-btn').forEach(btn => {
+                btn.classList.remove('closest-art-selected');
+                const span = btn.querySelector('span');
+                if (span) {
+                    span.textContent = '设为最接近现有技术';
+                }
+            });
+            
+            // 设置选中的按钮样式
+            const selectedBtn = document.querySelector(`label[for="closest-${fileNum}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('closest-art-selected');
+                const span = selectedBtn.querySelector('span');
+                if (span) {
+                    span.textContent = '最接近现有技术';
+                }
+            }
+            
+            // 更新查新对比结论
+            updateNoveltyAndCreativityConclusion();
+        }
+
+        // 切换实质性差异状态
+        function toggleSubstantialDifference(checkbox, diffId) {
+            const content = checkbox.dataset.content;
+            const [type, fileNum, itemNum] = diffId.split('-');
+            
+            if (checkbox.checked) {
+                // 添加到选中的差异点
+                const isAlreadyAdded = selectedDiffs[type].some(item => item.content === content);
+                if (!isAlreadyAdded) {
+                    selectedDiffs[type].push({ content, fileNum });
+                    // 更新查新对比结论
+                    updateNoveltyAndCreativityConclusion();
+                }
+            } else {
+                // 从选中的差异点中移除
+                selectedDiffs[type] = selectedDiffs[type].filter(item => item.content !== content);
+                // 更新查新对比结论
+                updateNoveltyAndCreativityConclusion();
+            }
+        }
+
+        // 更新新颖性和创造性结论
+        function updateNoveltyAndCreativityConclusion() {
+            // 获取查新对比结论容器
+            const conclusionContainer = document.querySelector('.mb-6.border.border-gray-200.rounded-lg.p-3.bg-white.shadow-sm');
+            
+            // 清空现有内容
+            conclusionContainer.innerHTML = '';
+            
+            // 添加新颖性判断
+            const noveltySection = generateNoveltySection();
+            conclusionContainer.appendChild(noveltySection);
+            
+            // 添加创造性判断
+            const creativitySection = generateCreativitySection();
+            conclusionContainer.appendChild(creativitySection);
+        }
+
+        // 生成新颖性判断部分
+        function generateNoveltySection() {
+            const section = document.createElement('div');
+            section.className = 'mb-5';
+            
+            // 获取每个对比文件的差异点
+            const file1Diffs = getAllDiffsForFile('1');
+            const file2Diffs = getAllDiffsForFile('2');
+            const file3Diffs = getAllDiffsForFile('3');
+            
+            // 判断是否具备新颖性（与所有对比文件都存在差异）
+            const hasNovelty = file1Diffs.length > 0 && file2Diffs.length > 0 && file3Diffs.length > 0;
+            
+            // 构建HTML
+            section.innerHTML = `
+                <h4 class="text-lg font-medium mb-3 text-blue-700 flex items-center justify-between">
+                    <span class="flex items-center">
+                        <i class="ri-checkbox-circle-line mr-2"></i>新颖性
+                    </span>
+                    <button onclick="toggleEditMode('novelty')" class="text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-blue-700 transition-colors">
+                        <i class="ri-edit-line mr-1"></i>编辑
+                    </button>
+                </h4>
+                <div class="text-sm bg-blue-50 p-4 rounded-lg" id="novelty-content">
+                    <div class="editable-content" data-section="novelty">
+                        <p class="font-medium text-gray-800 mb-2" contenteditable="false" data-field="conclusion">本方案${hasNovelty ? '<span class="text-blue-600 font-bold">具备</span>' : '<span class="text-red-600 font-bold">不具备</span>'}新颖性，理由如下：</p>
+                        
+                        ${file1Diffs.length > 0 ? `
+                        <div class="mt-3 border-l-4 border-blue-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="file1-title">本方案和对比文件1相比存在如下实质性差异：</p>
+                            <ol class="list-decimal list-outside pl-5 mt-2 space-y-1 text-gray-600" contenteditable="false" data-field="file1-diffs">
+                                ${file1Diffs.map(diff => `<li>${diff.content}</li>`).join('')}
+                            </ol>
+                        </div>
+                        ` : `
+                        <div class="mt-3 border-l-4 border-red-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="file1-no-diff">本方案和对比文件1相比不存在实质性差异</p>
+                        </div>
+                        `}
+                        
+                        ${file2Diffs.length > 0 ? `
+                        <div class="mt-3 border-l-4 border-blue-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="file2-title">本方案和对比文件2相比存在如下实质性差异：</p>
+                            <ol class="list-decimal list-outside pl-5 mt-2 space-y-1 text-gray-600" contenteditable="false" data-field="file2-diffs">
+                                ${file2Diffs.map(diff => `<li>${diff.content}</li>`).join('')}
+                            </ol>
+                        </div>
+                        ` : `
+                        <div class="mt-3 border-l-4 border-red-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="file2-no-diff">本方案和对比文件2相比不存在实质性差异</p>
+                        </div>
+                        `}
+                        
+                        ${file3Diffs.length > 0 ? `
+                        <div class="mt-3 border-l-4 border-blue-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="file3-title">本方案和对比文件3相比存在如下实质性差异：</p>
+                            <ol class="list-decimal list-outside pl-5 mt-2 space-y-1 text-gray-600" contenteditable="false" data-field="file3-diffs">
+                                ${file3Diffs.map(diff => `<li>${diff.content}</li>`).join('')}
+                            </ol>
+                        </div>
+                        ` : `
+                        <div class="mt-3 border-l-4 border-red-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="file3-no-diff">本方案和对比文件3相比不存在实质性差异</p>
+                        </div>
+                        `}
+                        
+                        <p class="mt-4 font-medium text-gray-800" contenteditable="false" data-field="final-conclusion">由上可判定本方案${hasNovelty ? '<span class="text-blue-600 font-bold">具备</span>' : '<span class="text-red-600 font-bold">不具备</span>'}新颖性。</p>
+                    </div>
+                </div>
+            `;
+            
+            return section;
+        }
+        
+        // 生成创造性判断部分
+        function generateCreativitySection() {
+            const section = document.createElement('div');
+            
+            // 获取每个对比文件的差异点
+            const file1Diffs = getAllDiffsForFile('1');
+            const file2Diffs = getAllDiffsForFile('2');
+            const file3Diffs = getAllDiffsForFile('3');
+            
+            // 使用用户设置的最接近现有技术文件号
+            const closestFile = closestPriorArtFile;
+            
+            // 获取最接近文件的差异点
+            const closestFileDiffs = getAllDiffsForFile(closestFile);
+            
+            // 找出独有的差异点（不存在于其他文件中的差异点）
+            const uniqueDiffs = getUniqueDiffs(closestFile);
+            
+            // 判断是否具备创造性（与最接近文件存在差异且有独有差异点）
+            const hasCreativity = closestFileDiffs.length > 0 && uniqueDiffs.length > 0;
+            
+            // 构建HTML
+            section.innerHTML = `
+                <h4 class="text-lg font-medium mb-3 text-green-700 flex items-center justify-between">
+                    <span class="flex items-center">
+                        <i class="ri-lightbulb-line mr-2"></i>创造性
+                    </span>
+                    <button onclick="toggleEditMode('creativity')" class="text-xs px-2 py-1 bg-green-100 hover:bg-green-200 rounded text-green-700 transition-colors">
+                        <i class="ri-edit-line mr-1"></i>编辑
+                    </button>
+                </h4>
+                <div class="text-sm bg-green-50 p-4 rounded-lg" id="creativity-content">
+                    <div class="editable-content" data-section="creativity">
+                        <p class="font-medium text-gray-800 mb-2" contenteditable="false" data-field="conclusion">本方案${hasCreativity ? '<span class="text-green-600 font-bold">具备</span>' : '<span class="text-red-600 font-bold">不具备</span>'}创造性，理由如下：</p>
+                        
+                        ${closestFileDiffs.length > 0 ? `
+                        <div class="mt-3 border-l-4 border-green-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="closest-title">本方案和最接近现有技术对比文件<span class="font-bold">${closestFile}</span>相比存在如下实质性差异：</p>
+                            <ol class="list-decimal list-outside pl-5 mt-2 space-y-1 text-gray-600" contenteditable="false" data-field="closest-diffs">
+                                ${closestFileDiffs.map(diff => `<li>${diff.content}</li>`).join('')}
+                            </ol>
+                        </div>
+                        ` : `
+                        <div class="mt-3 border-l-4 border-red-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="closest-no-diff">本方案和最接近现有技术对比文件<span class="font-bold">${closestFile}</span>相比不存在实质性差异</p>
+                        </div>
+                        `}
+                        
+                        ${uniqueDiffs.length > 0 ? `
+                        <div class="mt-3 border-l-4 border-green-300 pl-3">
+                            <p class="font-medium text-gray-700" contenteditable="false" data-field="unique-title">且以下差异：</p>
+                            <ol class="list-decimal list-outside pl-5 mt-2 space-y-1 text-gray-600" contenteditable="false" data-field="unique-diffs">
+                                ${uniqueDiffs.map(diff => `<li>${diff.content}</li>`).join('')}
+                            </ol>
+                            <p class="mt-1 text-gray-600" contenteditable="false" data-field="unique-explanation">也不存在于其他对比文件的结合技术中，因此对本领域技术人员而言不存在技术启示。</p>
+                        </div>
+                        ` : ''}
+                        
+                        <p class="mt-4 font-medium text-gray-800" contenteditable="false" data-field="final-conclusion">由上可判定本方案${hasCreativity ? '<span class="text-green-600 font-bold">具备</span>' : '<span class="text-red-600 font-bold">不具备</span>'}创造性。</p>
+                    </div>
+                </div>
+            `;
+            
+            return section;
+        }
+
+        // 编辑模式状态
+        const editModes = {
+            novelty: false,
+            creativity: false
+        };
+
+        // 切换编辑模式
+        function toggleEditMode(section) {
+            const isEditing = editModes[section];
+            const contentDiv = document.querySelector(`[data-section="${section}"]`);
+            const button = document.querySelector(`#${section}-content`).previousElementSibling.querySelector('button');
+            
+            if (!isEditing) {
+                // 进入编辑模式
+                editModes[section] = true;
+                
+                // 使所有可编辑元素可编辑
+                const editableElements = contentDiv.querySelectorAll('[contenteditable]');
+                editableElements.forEach(element => {
+                    element.contentEditable = 'true';
+                    element.classList.add('editing');
+                });
+                
+                // 更新按钮文本和样式
+                button.innerHTML = '<i class="ri-save-line mr-1"></i>保存';
+                button.className = button.className.replace(/bg-\w+-100 hover:bg-\w+-200 text-\w+-700/, 
+                    section === 'novelty' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white');
+                
+                // 添加编辑样式
+                addEditingStyles();
+                
+            } else {
+                // 退出编辑模式
+                editModes[section] = false;
+                
+                // 禁用编辑
+                const editableElements = contentDiv.querySelectorAll('[contenteditable]');
+                editableElements.forEach(element => {
+                    element.contentEditable = 'false';
+                    element.classList.remove('editing');
+                });
+                
+                // 恢复按钮文本和样式
+                button.innerHTML = '<i class="ri-edit-line mr-1"></i>编辑';
+                button.className = button.className.replace(/bg-\w+-600 hover:bg-\w+-700 text-white/, 
+                    section === 'novelty' ? 'bg-blue-100 hover:bg-blue-200 text-blue-700' : 'bg-green-100 hover:bg-green-200 text-green-700');
+            }
+        }
+
+        // 添加编辑样式
+        function addEditingStyles() {
+            if (!document.getElementById('editing-styles')) {
+                const style = document.createElement('style');
+                style.id = 'editing-styles';
+                style.textContent = `
+                    .editing {
+                        border: 1px dashed #3b82f6 !important;
+                        border-radius: 4px !important;
+                        padding: 4px !important;
+                        background-color: rgba(59, 130, 246, 0.05) !important;
+                        transition: all 0.2s ease !important;
+                    }
+                    .editing:focus {
+                        outline: 2px solid #3b82f6 !important;
+                        outline-offset: 2px !important;
+                        background-color: rgba(59, 130, 246, 0.1) !important;
+                    }
+                    .editing:hover {
+                        background-color: rgba(59, 130, 246, 0.08) !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // 获取指定文件的所有差异点
+        function getAllDiffsForFile(fileNum) {
+            const result = [];
+            
+            // 合并三种类型的差异点
+            ['problem', 'feature', 'effect'].forEach(type => {
+                const typeDiffs = selectedDiffs[type].filter(diff => diff.fileNum === fileNum);
+                result.push(...typeDiffs);
+            });
+            
+            return result;
+        }
+
+        // 获取独有的差异点（不存在于其他文件中的差异点）
+        function getUniqueDiffs(fileNum) {
+            const result = [];
+            const otherFileNums = ['1', '2', '3'].filter(num => num !== fileNum);
+            
+            // 获取指定文件的所有差异点
+            const fileDiffs = getAllDiffsForFile(fileNum);
+            
+            // 获取其他文件的所有差异点内容
+            const otherDiffsContent = [];
+            otherFileNums.forEach(num => {
+                const otherDiffs = getAllDiffsForFile(num);
+                otherDiffsContent.push(...otherDiffs.map(diff => diff.content));
+            });
+            
+            // 筛选出独有的差异点
+            fileDiffs.forEach(diff => {
+                if (!otherDiffsContent.includes(diff.content)) {
+                    result.push(diff);
+                }
+            });
+            
+            return result;
+        }
+
+        // 初始化：处理已经选中的复选框
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkedCheckboxes = document.querySelectorAll('.substantial-diff-checkbox:checked');
+            
+            checkedCheckboxes.forEach(checkbox => {
+                const diffId = checkbox.getAttribute('data-diff-id');
+                toggleSubstantialDifference(checkbox, diffId);
+            });
+        });
+    
+        function modifyDisclosure() {
+            window.location.href = 'editor2.html?type=2';
+        }
+
+        function generateReport() {
+            window.location.href = 'chaxin_report.html';
+            // // 创建模态窗口
+            // const modal = document.createElement('div');
+            // modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            // modal.id = 'wordPreviewModal';
+            
+            // // 创建模态窗口内容
+            // modal.innerHTML = `
+            //     <div class="bg-white rounded-lg shadow-xl w-4/5 flex flex-col" style="height: 95vh; max-height: 95vh;">
+            //         <div class="flex justify-between items-center p-2 border-b">
+            //             <h3 class="text-lg font-medium">一种基于深度学习的智能语音识别系统 - 查新报告</h3>
+            //             <div class="flex items-center space-x-2">
+            //                 <a href="查新.pdf" download="查新报告.pdf" class="text-blue-600 hover:text-blue-700 flex items-center px-2 py-1 rounded hover:bg-blue-50 transition-colors">
+            //                     <i class="ri-download-line text-lg mr-1"></i>
+            //                     <span class="text-sm">下载</span>
+            //                 </a>
+            //                 <button id="closePreviewBtn" class="text-gray-500 hover:text-gray-700">
+            //                     <i class="ri-close-line text-xl"></i>
+            //                 </button>
+            //             </div>
+            //         </div>
+            //         <div class="flex-1 p-4 overflow-hidden">
+            //             <iframe 
+            //                 src="查新.pdf" 
+            //                 class="w-full h-full border-0"
+            //                 frameborder="0"
+            //             ></iframe>
+            //         </div>
+                    
+            //     </div>
+            // `;
+            
+            // // 添加到文档中
+            // document.body.appendChild(modal);
+            
+            // // 添加关闭事件
+            // document.getElementById('closePreviewBtn').addEventListener('click', closeWordPreview);
+        }
+
+        function closeWordPreview() {
+            const modal = document.getElementById('wordPreviewModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+    </script>
+</body>
+</html>

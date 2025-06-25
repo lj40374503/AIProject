@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专利申请书智能评估系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        /* 隐藏滚动条但保留功能 */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 全局滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        .problem-item {
+            border-left: 3px solid transparent;
+        }
+        .problem-item.critical {
+            border-left-color: #ef4444;
+        }
+        .problem-item.major {
+            border-left-color: #f97316;
+        }
+        .problem-item.minor {
+            border-left-color: #facc15;
+        }
+        .highlight-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .highlight-warning {
+            background-color: #fffbeb;
+            border: 1px solid #fed7aa;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-black">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- 顶部信息栏 -->
+            <div class="bg-white p-4 border-b shadow-sm">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-medium">专利预评估：一种基于深度学习的智能语音识别系统</h2>
+                        <div class="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                            <span><i class="ri-calendar-line mr-1"></i>提交时间：2023-11-20</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <!-- <button id="noveltySearchBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center">
+                            <i class="ri-search-line mr-1"></i> 查新检索
+                        </button> -->
+                        <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center">
+                            <i class="ri-download-line mr-1"></i> 导出报告
+                        </button>
+                        <!-- <button id="exportReportBtn" class="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg flex items-center transition-colors">
+                            <i class="ri-file-download-line mr-1"></i>导出报告
+                        </button> -->
+                        <!-- <button class="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center">
+                            <i class="ri-check-line mr-1"></i> 完成评估
+                        </button> -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 评估内容区 -->
+            <div class="flex-1 overflow-hidden flex">
+                <!-- 左侧文件预览 -->
+                <div class="w-1/2 border-r overflow-hidden flex flex-col">
+                    <div class="bg-gray-100 p-3 border-b flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 text-sm font-medium bg-white shadow-sm rounded-md" data-tab="claims">权利要求书</button>
+                            <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md" data-tab="description">说明书</button>
+                            <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md" data-tab="abstract">摘要</button>
+                            <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md" data-tab="drawings">说明书附图</button>
+                            <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md" data-tab="drawings">摘要附图</button>
+                        </div>
+                        <!-- <div class="flex items-center space-x-2">
+                            <button id="highlightBtn" class="text-gray-500 hover:text-primary-600 px-2 py-1 rounded text-sm" title="高亮问题">
+                                <i class="ri-mark-pen-line"></i>
+                            </button>
+                            <button class="text-gray-500 hover:text-primary-600" title="全屏">
+                                <i class="ri-fullscreen-line"></i>
+                            </button>
+                        </div> -->
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 bg-white">
+                        <!-- 权利要求书内容 -->
+                        <div id="claimsContent" class="prose max-w-none">
+                            <h3 class="text-center font-bold mb-6">权利要求书</h3>
+                            <div class="space-y-4">
+                                <div class="border-l-4 border-blue-500 pl-4">
+                                    <p class="mb-2 font-medium">1. 一种基于深度学习的智能语音识别系统，其特征在于，包括：</p>
+                                    <div class="pl-4 space-y-2 text-sm">
+                                        <p>音频采集模块，用于采集用户的语音信号；</p>
+                                        <p>预处理模块，用于对所述语音信号进行降噪、分帧和特征提取；</p>
+                                        <p>深度学习模型，包括多层神经网络结构，用于对预处理后的语音特征进行识别和转换；</p>
+                                        <p class="highlight-warning">语义理解模块，用于分析识别结果的语义内容；</p>
+                                        <p class="highlight-warning">响应生成模块，用于根据语义理解结果生成相应的系统响应。</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-l-4 border-gray-300 pl-4">
+                                    <p class="mb-2 font-medium">2. 根据权利要求1所述的智能语音识别系统，其特征在于，所述预处理模块包括：</p>
+                                    <div class="pl-4 space-y-2 text-sm">
+                                        <p>降噪单元，采用自适应滤波算法对环境噪声进行抑制；</p>
+                                        <p>分帧单元，将语音信号按照20-30ms的帧长进行分帧处理；</p>
+                                        <p>特征提取单元，提取梅尔频率倒谱系数(MFCC)作为语音特征。</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-l-4 border-gray-300 pl-4">
+                                    <p class="mb-2 font-medium">3. 根据权利要求1所述的智能语音识别系统，其特征在于，所述深度学习模型包括：</p>
+                                    <div class="pl-4 space-y-2 text-sm">
+                                        <p class="highlight-error">卷积神经网络层；</p>
+                                        <p class="highlight-error">循环神经网络层；</p>
+                                        <p>全连接层。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 说明书内容（默认隐藏） -->
+                        <div id="descriptionContent" class="prose max-w-none hidden">
+                            <h3 class="text-center font-bold mb-6">说明书</h3>
+                            <div class="space-y-4">
+                                <section>
+                                    <h4 class="font-bold mb-2">技术领域</h4>
+                                    <p class="text-sm">本发明涉及人工智能技术领域，特别是涉及一种基于深度学习的智能语音识别系统。</p>
+                                </section>
+                                
+                                <section>
+                                    <h4 class="font-bold mb-2">背景技术</h4>
+                                    <p class="text-sm">随着人工智能技术的快速发展，语音识别技术在各个领域得到了广泛应用...</p>
+                                </section>
+                                
+                                <section>
+                                    <h4 class="font-bold mb-2">发明内容</h4>
+                                    <p class="text-sm">本发明的目的是提供一种基于深度学习的智能语音识别系统，以解决现有技术中存在的问题。</p>
+                                </section>
+                                
+                                <section>
+                                    <h4 class="font-bold mb-2 highlight-error">具体实施方式</h4>
+                                    <p class="text-sm highlight-error">下面结合附图对本发明的具体实施方式进行详细说明。（此部分内容不充分）</p>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 右侧评估结果 -->
+                <div class="w-1/2 overflow-hidden flex flex-col">
+                    <!-- 评估类型选项卡 -->
+                    <div class="flex p-3 space-x-1 bg-white rounded-lg shadow-sm">
+                        <button class="flex items-center px-4 py-2 text-sm font-medium text-purple-700 bg-gradient-to-r from-purple-50 to-purple-100 border-b-2 border-purple-500 rounded-md transition-all duration-200 hidden" data-assessment="overall">
+                            <i class="ri-file-chart-line mr-2"></i>
+                            总体评估
+                        </button>
+                        <button class="flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-md transition-all duration-200" data-assessment="formal">
+                            <i class="ri-file-list-3-line mr-2"></i>
+                            形式审查
+                        </button>
+                        <button class="flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200" data-assessment="abnormal">
+                            <i class="ri-shield-check-line mr-2"></i>
+                            非正常申请
+                        </button>
+                        <button class="flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200" data-assessment="novelty">
+                            <i class="ri-search-line mr-2"></i>
+                            新创性评估
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-2 bg-white">
+                        <!-- 总体评估结果页面 -->
+                        <div id="overallAssessment" class="space-y-4 hidden">
+                            <!-- 总体评估概览 -->
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="font-medium text-blue-900 flex items-center">
+                                        <i class="ri-file-chart-line mr-2"></i>总体评估结果
+                                    </h3>
+                                    <!-- <div class="flex items-center space-x-4">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 relative">
+                                                <svg class="progress-ring w-10 h-10" viewBox="0 0 32 32">
+                                                    <circle class="progress-ring-circle" stroke="#e5e7eb" stroke-width="3" fill="transparent" r="14" cx="16" cy="16"/>
+                                                    <circle class="progress-ring-circle" stroke="#10b981" stroke-width="3" fill="transparent" r="14" cx="16" cy="16" stroke-dasharray="87.96" stroke-dashoffset="26.39"/>
+                                                </svg>
+                                            </div>
+                                            <span class="text-sm font-bold text-green-600 ml-2">70%</span>
+                                        </div>
+                                        <span class="text-sm font-bold text-yellow-600 bg-yellow-50 px-3 py-1 rounded border border-yellow-200">部分通过</span>
+                                    </div> -->
+                                </div>
+                                
+                                <!-- 各项评估状态概览 -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-white rounded-lg p-3 border border-yellow-200 shadow-sm">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="text-sm font-medium text-yellow-700 flex items-center">
+                                                <i class="ri-file-list-3-line mr-2"></i>形式审查
+                                            </h4>
+                                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">部分通过</span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">
+                                            <p class="mb-1">发现 <span class="font-medium text-red-600">6个问题</span></p>
+                                            <p class="text-xs">严重问题: 2个 | 一般问题: 4个</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white rounded-lg p-3 border border-green-200 shadow-sm">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="text-sm font-medium text-green-700 flex items-center">
+                                                <i class="ri-shield-check-line mr-2"></i>非正常申请
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">全部通过</span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">
+                                            <p class="mb-1">发现 <span class="font-medium text-green-600">0个问题</span></p>
+                                            <p class="text-xs">符合专利申请要求</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white rounded-lg p-3 border border-yellow-200 shadow-sm">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="text-sm font-medium text-yellow-700 flex items-center">
+                                                <i class="ri-search-line mr-2"></i>新创性评估
+                                            </h4>
+                                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">需要关注</span>
+                                        </div>
+                                        <div class="text-xs text-gray-600">
+                                            <p class="mb-1">发现 <span class="font-medium text-yellow-600">2个问题</span></p>
+                                            <p class="text-xs">创造性需要进一步论证</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 问题汇总列表 -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-medium text-gray-900 flex items-center">
+                                        <i class="ri-error-warning-line mr-2 text-red-500"></i>问题汇总清单
+                                    </h4>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">问题数: 8</span>
+                                        <!-- <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">一般: 6</span> -->
+                                    </div>
+                                </div>
+                                
+                                <!-- 严重问题 -->
+                                <div class="mb-4">
+                                    <!-- <h5 class="text-sm font-medium text-red-700 mb-3 flex items-center">
+                                        <i class="ri-alert-line mr-2"></i>严重问题 (需要立即修改)
+                                    </h5> -->
+                                    <div class="space-y-3">
+                                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded mr-2">形式审查</span>
+                                                        <h6 class="text-sm font-medium text-red-800">语言规范性审查</h6>
+                                                    </div>
+                                                    <p class="text-xs text-red-700 mb-2">发现多处语言规范问题：错别字4处，语病句3处，非规范术语2处</p>
+                                                    <p class="text-xs text-gray-600">修改建议：修正错别字，调整语病句式，使用规范的技术术语</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('language', 1)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded mr-2">形式审查</span>
+                                                        <h6 class="text-sm font-medium text-red-800">说明书形式</h6>
+                                                    </div>
+                                                    <p class="text-xs text-red-700 mb-2">说明书缺少具体实施方式部分的详细描述</p>
+                                                    <p class="text-xs text-gray-600">修改建议：补充说明书中具体实施方式部分，详细描述深度学习模型的网络结构、层数、激活函数、训练方法等技术细节</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('description', 4)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 一般问题 -->
+                                <div class="mb-4">
+                                    <!-- <h5 class="text-sm font-medium text-yellow-700 mb-3 flex items-center">
+                                        <i class="ri-information-line mr-2"></i>一般问题 (建议优化)
+                                    </h5> -->
+                                    <div class="space-y-3">
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded mr-2">形式审查</span>
+                                                        <h6 class="text-sm font-medium text-yellow-800">文本一致性校验</h6>
+                                                    </div>
+                                                    <p class="text-xs text-yellow-700 mb-2">发现术语使用不一致和标记问题</p>
+                                                    <p class="text-xs text-gray-600">修改建议：统一术语使用，在权利要求中适当添加"所述"限定词</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('consistency', 1)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded mr-2">形式审查</span>
+                                                        <h6 class="text-sm font-medium text-yellow-800">权利要求撰写质量</h6>
+                                                    </div>
+                                                    <p class="text-xs text-yellow-700 mb-2">权利要求1包含非必要特征，可能限制保护范围</p>
+                                                    <p class="text-xs text-gray-600">修改建议：建议将"语义理解模块"和"响应生成模块"移至从属权利要求中，以扩大主权利要求的保护范围</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('claims', 1)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded mr-2">形式审查</span>
+                                                        <h6 class="text-sm font-medium text-yellow-800">格式逻辑检查</h6>
+                                                    </div>
+                                                    <p class="text-xs text-yellow-700 mb-2">权利要求引用格式存在问题</p>
+                                                    <p class="text-xs text-gray-600">修改建议：修正权利要求引用关系，确保引用格式符合规范</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('format', 3)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded mr-2">新创性评估</span>
+                                                        <h6 class="text-sm font-medium text-yellow-800">创造性论证</h6>
+                                                    </div>
+                                                    <p class="text-xs text-yellow-700 mb-2">与现有技术CN112345678A相似度75%，需要进一步论证创造性</p>
+                                                    <p class="text-xs text-gray-600">修改建议：加强注意力机制与多尺度融合特定组合的技术效果论证</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('creativity', 1)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center mb-2">
+                                                        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded mr-2">新创性评估</span>
+                                                        <h6 class="text-sm font-medium text-yellow-800">技术方案对比</h6>
+                                                    </div>
+                                                    <p class="text-xs text-yellow-700 mb-2">与US20210123456A1在多尺度特征融合方面存在相似性</p>
+                                                    <p class="text-xs text-gray-600">修改建议：突出融合算法改进和注意力权重机制的独特性</p>
+                                                </div>
+                                                <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center ml-4" onclick="locateIssue('comparison', 2)">
+                                                    <i class="ri-map-pin-line mr-1"></i>定位
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 修改建议汇总 -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 class="font-medium text-blue-900 mb-3 flex items-center">
+                                    <i class="ri-lightbulb-line mr-2"></i>修改建议汇总
+                                </h4>
+                                <div class="space-y-3">
+                                    <div class="bg-white rounded-lg p-3 border border-blue-200">
+                                        <h5 class="text-sm font-medium text-blue-800 mb-2">优先级修改 (必须完成)</h5>
+                                        <ul class="text-xs text-gray-700 space-y-1">
+                                            <li>• 修正说明书中的错别字和语病句，使用规范的技术术语</li>
+                                            <li>• 补充说明书具体实施方式部分，详细描述技术方案的实现细节</li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-white rounded-lg p-3 border border-blue-200">
+                                        <h5 class="text-sm font-medium text-blue-800 mb-2">建议性修改 (提升质量)</h5>
+                                        <ul class="text-xs text-gray-700 space-y-1">
+                                            <li>• 统一术语使用，完善权利要求中的限定词</li>
+                                            <li>• 优化权利要求布局，将非必要特征移至从属权利要求</li>
+                                            <li>• 加强创造性论证，突出技术方案的独特性和技术效果</li>
+                                            <li>• 修正权利要求引用格式，确保逻辑关系清晰</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 形式审查结果 -->
+                        <div id="formalAssessment" class="space-y-4">
+                            <!-- 评估前默认页面 -->
+                            <div id="formalAssessmentDefault" class="text-center py-12">
+                                <div class="bg-white  rounded-lg p-8">
+                                    <div class="mb-6">
+                                        <i class="ri-file-list-3-line text-6xl text-blue-500 mb-4"></i>
+                                        <h3 class="text-xl font-medium text-blue-900 mb-2">形式审查</h3>
+                                        <p class="text-sm text-blue-700">对专利申请文件的格式、完整性和规范性进行全面检查</p>
+                                    </div>
+                                    <!-- <div class="px-24 space-y-3 text-left max-w-md mx-auto mb-6">
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>文件完整性检查</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>格式规范性验证</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>文本一致性分析</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>语言规范化检测</span>
+                                        </div>
+                                    </div> -->
+                                    <button onclick="startFormalAssessment()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center mx-auto">
+                                        <i class="ri-play-line mr-2"></i>
+                                        开始形式审查
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 评估结果页面（默认隐藏） -->
+                            <div id="formalAssessmentResults" class="hidden">
+                                <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-medium text-yellow-900">形式审查</h3>
+                                        <button class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">重新评估</button>
+                                    </div>
+                                    <p class="text-sm text-yellow-700">发现4个问题需要修改，2个项目需要关注</p>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-list-3-line mr-2"></i>
+                                                文件完整性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="fileIntegrityStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('fileIntegrity')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 说明书、权利要求书、摘要等文件齐全</p>
+                                    </div>
+                                
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-layout-line mr-2 text-green-600"></i>
+                                                格式规范性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="formatStandardStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('formatStandard')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 页边距、字体、行距等格式符合要求</p>
+                                    </div>
+                                
+                                    <div class="bg-white border border-red-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-text mr-2 text-red-600"></i>
+                                                文本一致性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="textConsistencyStatus" class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">不通过</span>
+                                                <button onclick="toggleStatus('textConsistency')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">✗ 说明书与权利要求书中的技术术语不一致</p>
+                                        <div class="bg-red-50 border border-red-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-red-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-red-600">说明书中使用"深度学习网络"，权利要求中使用"神经网络"</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('consistency', 1)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">统一使用"深度学习网络"术语，确保说明书与权利要求书表述一致</p>
+                                        </div>
+                                    </div>
+                                
+                                    <div class="bg-white border border-red-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-translate-2 mr-2 text-red-600"></i>
+                                                语言规范化
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="languageStandardStatus" class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">不通过</span>
+                                                <button onclick="toggleStatus('languageStandard')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">✗ 存在语言表达不规范问题</p>
+                                        <div class="bg-red-50 border border-red-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-red-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-red-600">错别字4处，语病句3处，非规范术语2处</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('language', 1)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">修正错别字，调整语病句式，使用规范的技术术语</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white border border-red-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-text-line mr-2 text-red-600"></i>
+                                                说明书形式
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="descriptionFormStatus" class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">不通过</span>
+                                                <button onclick="toggleStatus('descriptionForm')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">✗ 说明书缺少具体实施方式部分的详细描述</p>
+                                        <div class="bg-red-50 border border-red-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-red-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-red-600">说明书第4节"具体实施方式"内容过于简单，未详细描述深度学习模型的具体结构</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('description', 4)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">补充说明书中具体实施方式部分，详细描述深度学习模型的网络结构、层数、激活函数、训练方法等技术细节</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white border border-yellow-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-article-line mr-2 text-yellow-600"></i>
+                                                权利要求撰写质量
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="claimsQualityStatus" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">部分通过</span>
+                                                <button onclick="toggleStatus('claimsQuality')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">⚠ 权利要求1包含非必要特征，可能限制保护范围</p>
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-yellow-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-yellow-600">权利要求1中的"语义理解模块"和"响应生成模块"可能为非必要特征</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('claims', 1)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">建议将"语义理解模块"和"响应生成模块"移至从属权利要求中，以扩大主权利要求的保护范围</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white border border-yellow-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-code-line mr-2 text-yellow-600"></i>
+                                                格式逻辑检查
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="formatLogicStatus" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">部分通过</span>
+                                                <button onclick="toggleStatus('formatLogic')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">⚠ 权利要求引用格式存在问题</p>
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-yellow-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-yellow-600">权利要求3存在多引多的情况，权利要求5引用主题错误</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('format', 3)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">修正权利要求引用关系，确保引用格式符合规范</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 非正常申请评估（默认隐藏） -->
+                        <div id="abnormalAssessment" class="space-y-4 hidden">
+                            <!-- 评估前默认页面 -->
+                            <div id="abnormalAssessmentDefault" class="text-center py-12">
+                                <div class="rounded-lg">
+                                    <div class="mb-6">
+                                        <i class="ri-shield-check-line text-6xl text-green-500 mb-4"></i>
+                                        <h3 class="text-xl font-medium text-green-900 mb-2">非正常申请评估</h3>
+                                        <p class="text-sm text-green-700">检测专利申请是否存在非正常申请情形</p>
+                                    </div>
+                                    <!-- <div class="px-24 space-y-3 text-left max-w-md mx-auto mb-6">
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>客体合规性检查</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>抄袭与重复风险评估</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>保护范围合理性分析</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-green-500 mr-2"></i>
+                                            <span>申请行为规范性检测</span>
+                                        </div>
+                                    </div> -->
+
+                                    <div id="abnormalAssessmentForm" class="mb-8">
+                                        <h4 class="text-lg font-semibold text-gray-800 mb-6 text-center">请输入基本信息</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div class="space-y-2">
+                                                <label class="block text-sm font-semibold text-gray-700">
+                                                    发明人名称 <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200" placeholder="请输入发明人姓名">
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="block text-sm font-semibold text-gray-700">
+                                                    申请人名称 <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200" placeholder="请输入申请人名称">
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="block text-sm font-semibold text-gray-700">
+                                                    代理机构名称 <span class="text-red-500">*</span>
+                                                </label>
+                                                <input type="text" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200" placeholder="请输入代理机构名称">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button onclick="startAbnormalAssessment()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center mx-auto">
+                                        <i class="ri-play-line mr-2"></i>
+                                        开始评估
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 评估结果页面（默认隐藏） -->
+                            <div id="abnormalAssessmentResults" class="hidden">
+                                <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-medium text-green-900">非正常申请评估</h3>
+                                        <button class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">重新评估</button>
+                                    </div>
+                                    <p class="text-sm text-green-700">未发现非正常申请情形，符合专利申请要求</p>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-shield-check-line mr-2 text-green-600"></i>
+                                                客体合规性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="objectComplianceStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('objectCompliance')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 技术方案不涉及商业规则、算法或非技术方案，独立权利要求技术特征合理</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-copy-2-line mr-2 text-green-600"></i>
+                                                抄袭与重复风险
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="plagiarismRiskStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('plagiarismRisk')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 文件内容原创性良好，未发现明显的抄袭或模板化表述</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-focus-3-line mr-2 text-green-600"></i>
+                                                保护范围合理性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="protectionScopeStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('protectionScope')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 独立权利要求保护范围适中，权利要求布局合理，功能限定使用恰当</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-lightbulb-line mr-2 text-green-600"></i>
+                                                创新性缺陷检查
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="innovationDefectStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('innovationDefect')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 技术方案具有创新性，公知常识特征比例合理，实施例描述充分</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-tools-line mr-2 text-green-600"></i>
+                                                实用性检查
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="utilityCheckStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('utilityCheck')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 发明具有明确的产业应用前景和实用价值</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-flask-line mr-2 text-green-600"></i>
+                                                自然规律符合性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="naturalLawStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('naturalLaw')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 技术方案符合自然规律，不存在违反科学原理的内容</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-copy-line mr-2 text-green-600"></i>
+                                                重复申请检查
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="duplicateApplicationStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('duplicateApplication')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 未发现与申请人之前提交的申请存在明显重复</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-settings-line mr-2 text-green-600"></i>
+                                                技术方案完整性
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span id="technicalCompletenessStatus" class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                                <button onclick="toggleStatus('technicalCompleteness')" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+                                                    <i class="ri-refresh-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 申请文件中包含明确的技术方案，具有技术特征</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 新创性评估（默认隐藏） -->
+                        <div id="noveltyAssessment" class="space-y-4 hidden">
+                            <!-- 评估前默认页面 -->
+                            <div id="noveltyAssessmentDefault" class="text-center py-12">
+                                <div class="rounded-lg p-8">
+                                    <div class="mb-6">
+                                        <i class="ri-lightbulb-line text-6xl text-orange-500 mb-4"></i>
+                                        <h3 class="text-xl font-medium text-orange-900 mb-2">新创性评估</h3>
+                                        <p class="text-sm text-orange-700">评估专利申请的新颖性、创造性和实用性</p>
+                                    </div>
+                                    <!-- <div class="px-24 space-y-3 text-left max-w-md mx-auto mb-6">
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-orange-500 mr-2"></i>
+                                            <span>新颖性检索与分析</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-orange-500 mr-2"></i>
+                                            <span>创造性评估</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-orange-500 mr-2"></i>
+                                            <span>实用性验证</span>
+                                        </div>
+                                        <div class="flex items-center text-sm text-gray-600">
+                                            <i class="ri-check-line text-orange-500 mr-2"></i>
+                                            <span>技术效果分析</span>
+                                        </div>
+                                    </div> -->
+                                    <button onclick="startNoveltyAssessment()" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center mx-auto">
+                                        <i class="ri-play-line mr-2"></i>
+                                        开始新创性评估
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 评估结果页面（默认隐藏） -->
+                            <div id="noveltyAssessmentResults" class="hidden">
+                                <!-- 评估概览 -->
+                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="text-sm font-semibold text-blue-900 flex items-center">
+                                            新创性评估
+                                        </h3>
+                                        <div class="flex space-x-2">
+                                            <button id="deepSearchBtn" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-lg flex items-center transition-colors">
+                                                <i class="ri-search-2-line mr-1"></i>深度查新
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="bg-white rounded-lg p-4 border border-blue-100">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-medium text-blue-700">新颖性</span>
+                                                <span id="noveltyStatus" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">通过</span>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mt-1">未发现完全相同的现有技术</p>
+                                        </div>
+                                        <div class="bg-white rounded-lg p-4 border border-yellow-100">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-medium text-yellow-700">创造性</span>
+                                                <span id="creativityStatus" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">需要关注</span>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mt-1">发现2个潜在问题</p>
+                                        </div>
+                                        <div class="bg-white rounded-lg p-4 border border-green-100">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-medium text-green-700">实用性</span>
+                                                <span id="utilityStatus" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">通过</span>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mt-1">具有明确的技术效果</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 新颖性分析 -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-sm font-semibold text-blue-900 flex items-center">
+                                            <i class="ri-star-line mr-2"></i>新颖性分析
+                                        </h4>
+                                        <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">具备新颖性</span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                            <h6 class="text-xs font-medium text-blue-900 mb-2 flex items-center">
+                                                <i class="ri-question-line mr-1"></i>技术问题
+                                            </h6>
+                                            <div class="text-xs text-blue-800">
+                                                <p class="mb-2">解决图像处理效率与准确度平衡问题</p>
+                                                <div class="flex items-center text-xs">
+                                                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">问题识别</span>
+                                                    <span class="text-green-600">新的技术挑战</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                            <h6 class="text-xs font-medium text-blue-900 mb-2 flex items-center">
+                                                <i class="ri-lightbulb-line mr-1"></i>技术方案
+                                            </h6>
+                                            <div class="text-xs text-blue-800">
+                                                <p class="mb-2">CNN+注意力机制+多尺度融合的组合</p>
+                                                <div class="flex items-center text-xs">
+                                                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">方案评估</span>
+                                                    <span class="text-green-600">区别于现有技术</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                            <h6 class="text-xs font-medium text-blue-900 mb-2 flex items-center">
+                                                <i class="ri-trophy-line mr-1"></i>技术效果
+                                            </h6>
+                                            <div class="text-xs text-blue-800">
+                                                <p class="mb-2">识别速度提升40%，准确率95%+</p>
+                                                <div class="flex items-center text-xs">
+                                                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">效果评估</span>
+                                                    <span class="text-green-600">显著改进</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white rounded-lg p-4 border border-blue-200">
+                                        <h6 class="text-xs font-medium text-blue-700 mb-3 flex items-center">
+                                            <i class="ri-search-line mr-2"></i>新颖性检索结果
+                                        </h6>
+                                        <div class="space-y-2 text-xs">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span class="text-gray-700">技术领域检索：在图像处理+深度学习领域未发现完全相同的技术方案</span>
+                                            </div>
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                <span class="text-gray-700">技术特征对比：注意力机制与多尺度融合的特定组合方式具有新颖性</span>
+                                            </div>
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
+                                                <span class="text-gray-700">应用场景：在特定图像处理场景下的应用具有新的技术意义</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 创造性分析 -->
+                                <div class="bg-purple-50 border border-purple-200 rounded-xl p-6">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-sm font-semibold text-purple-900 flex items-center">
+                                            <i class="ri-lightbulb-flash-line mr-2"></i>创造性分析
+                                        </h4>
+                                        <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">需要论证</span>
+                                    </div>
+                                    
+                                    <!-- 现有技术对比 -->
+                                    <div class="space-y-4 mb-4">
+                                        <div class="bg-white border border-purple-200 rounded-lg p-4">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <h6 class="text-xs font-medium text-purple-800 flex items-center">
+                                                    <i class="ri-file-text-line mr-2"></i>对比文献 1 - CN112345678A
+                                                </h6>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-xs text-purple-600">相似度: 75%</span>
+                                                    <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">高相似</span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mb-3">基于深度学习的图像识别方法</p>
+                                            
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mb-3">
+                                                <div class="bg-red-50 border border-red-200 rounded p-3">
+                                                    <span class="font-medium text-red-700">相同技术特征：</span>
+                                                    <ul class="text-gray-700 mt-1 space-y-1">
+                                                        <li>• 深度学习框架</li>
+                                                        <li>• 特征提取模块</li>
+                                                        <li>• 图像分类功能</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="bg-green-50 border border-green-200 rounded p-3">
+                                                    <span class="font-medium text-green-700">区别技术特征：</span>
+                                                    <ul class="text-gray-700 mt-1 space-y-1">
+                                                        <li>• 注意力机制优化</li>
+                                                        <li>• 多尺度融合算法</li>
+                                                        <li>• 特定场景适配</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                                <p class="text-xs font-medium text-yellow-700 mb-1">创造性评估：</p>
+                                                <p class="text-xs text-gray-700">虽然基础框架相似，但注意力机制与多尺度融合的特定组合及其在该应用场景下的优化具有非显而易见性</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white border border-purple-200 rounded-lg p-4">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <h6 class="text-xs font-medium text-purple-800 flex items-center">
+                                                    <i class="ri-file-text-line mr-2"></i>对比文献 2 - US20210123456A1
+                                                </h6>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-xs text-purple-600">相似度: 68%</span>
+                                                    <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">中等相似</span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mb-3">Multi-scale Feature Fusion for Object Detection</p>
+                                            
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mb-3">
+                                                <div class="bg-red-50 border border-red-200 rounded p-3">
+                                                    <span class="font-medium text-red-700">相同技术特征：</span>
+                                                    <ul class="text-gray-700 mt-1 space-y-1">
+                                                        <li>• 多尺度特征融合</li>
+                                                        <li>• 目标检测应用</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="bg-green-50 border border-green-200 rounded p-3">
+                                                    <span class="font-medium text-green-700">区别技术特征：</span>
+                                                    <ul class="text-gray-700 mt-1 space-y-1">
+                                                        <li>• 融合算法改进</li>
+                                                        <li>• 注意力权重机制</li>
+                                                        <li>• 效率优化策略</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-green-50 border border-green-200 rounded p-3">
+                                                <p class="text-xs font-medium text-green-700 mb-1">创造性评估：</p>
+                                                <p class="text-xs text-gray-700">在多尺度融合基础上增加注意力机制的改进具有创造性，实现了效率与准确度的平衡</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 创造性综合评估 -->
+                                    <div class="bg-white rounded-lg p-4 border border-purple-200">
+                                        <h6 class="text-xs font-medium text-purple-700 mb-3 flex items-center">
+                                            <i class="ri-brain-line mr-2"></i>创造性综合评估
+                                        </h6>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                            <div class="space-y-2">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                    <span class="text-gray-700"><strong>技术启示：</strong>现有技术未给出将注意力机制与多尺度融合结合的明确启示</span>
+                                                </div>
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                    <span class="text-gray-700"><strong>技术效果：</strong>实现了意外的技术效果，超出了简单组合的预期</span>
+                                                </div>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0"></div>
+                                                    <span class="text-gray-700"><strong>技术难点：</strong>需要解决注意力机制与融合算法的协同优化问题</span>
+                                                </div>
+                                                <div class="flex items-center space-x-3">
+                                                    <div class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                                                    <span class="text-gray-700"><strong>创新程度：</strong>属于组合创新，但具有非显而易见的技术贡献</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 实用性分析 -->
+                                <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-sm font-semibold text-green-900 flex items-center">
+                                            <i class="ri-tools-line mr-2"></i>实用性分析
+                                        </h4>
+                                        <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full">通过</span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                        <div class="bg-white rounded-lg p-4 border border-green-200">
+                                            <h6 class="text-xs font-medium text-green-900 mb-2 flex items-center">
+                                                <i class="ri-bar-chart-line mr-1"></i>技术效果
+                                            </h6>
+                                            <div class="text-xs text-green-800">
+                                                <div class="space-y-2">
+                                                    <div class="flex justify-between">
+                                                        <span>处理速度</span>
+                                                        <span class="font-medium">提升40%</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span>检测准确率</span>
+                                                        <span class="font-medium">95%以上</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span>资源占用</span>
+                                                        <span class="font-medium">降低30%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white rounded-lg p-4 border border-green-200">
+                                            <h6 class="text-xs font-medium text-green-900 mb-2 flex items-center">
+                                                <i class="ri-settings-line mr-1"></i>技术可行性
+                                            </h6>
+                                            <div class="text-xs text-green-800">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span>算法复杂度可控</span>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span>硬件要求合理</span>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span>实现成本可接受</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white rounded-lg p-4 border border-green-200">
+                                            <h6 class="text-xs font-medium text-green-900 mb-2 flex items-center">
+                                                <i class="ri-global-line mr-1"></i>应用前景
+                                            </h6>
+                                            <div class="text-xs text-green-800">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span>医疗影像诊断</span>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span>自动驾驶视觉</span>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        <span>工业质检系统</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white rounded-lg p-4 border border-green-200">
+                                        <h6 class="text-xs font-medium text-green-700 mb-3 flex items-center">
+                                            <i class="ri-check-line mr-2"></i>实用性评估结论
+                                        </h6>
+                                        <div class="text-xs text-gray-700 space-y-2">
+                                            <p><strong>技术成熟度：</strong>基于成熟的深度学习框架，技术风险可控</p>
+                                            <p><strong>产业化前景：</strong>在多个应用领域具有明确的商业价值和市场需求</p>
+                                            <p><strong>社会效益：</strong>能够提升相关行业的自动化水平和工作效率</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 综合评估建议 -->
+                                <div class="bg-gray-50 rounded-xl p-6">
+                                    <h4 class="text-sm font-semibold mb-4 flex items-center">
+                                        <i class="ri-user-star-line mr-2 text-indigo-600"></i>综合评估建议
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                            <h6 class="text-xs font-medium text-blue-700 mb-3 flex items-center">
+                                                <i class="ri-star-line mr-2"></i>新颖性强化
+                                            </h6>
+                                            <div class="space-y-2 text-xs text-gray-700">
+                                                <p>• 补充更全面的现有技术检索</p>
+                                                <p>• 详细描述技术特征的具体实现</p>
+                                                <p>• 强调在特定应用场景下的优势</p>
+                                            </div>
+                                        </div>
+                                        <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                            <h6 class="text-xs font-medium text-purple-700 mb-3 flex items-center">
+                                                <i class="ri-lightbulb-flash-line mr-2"></i>创造性论证
+                                            </h6>
+                                            <div class="space-y-2 text-xs text-gray-700">
+                                                <p>• 详细阐述技术组合的非显而易见性</p>
+                                                <p>• 提供更多实验数据证明意外效果</p>
+                                                <p>• 分析现有技术的局限性和突破点</p>
+                                            </div>
+                                        </div>
+                                        <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                            <h6 class="text-xs font-medium text-green-700 mb-3 flex items-center">
+                                                <i class="ri-tools-line mr-2"></i>实用性完善
+                                            </h6>
+                                            <div class="space-y-2 text-xs text-gray-700">
+                                                <p>• 补充更多应用场景的验证数据</p>
+                                                <p>• 详细说明技术实现的具体步骤</p>
+                                                <p>• 分析产业化的可行性和前景</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                                        <h6 class="text-xs font-medium text-blue-700 mb-2 flex items-center">
+                                            <i class="ri-lightbulb-line mr-2"></i>最终评估结论
+                                        </h6>
+                                        <div class="text-xs text-gray-700 space-y-2">
+                                            <p><strong>新颖性：</strong>技术方案具备新颖性，在现有技术基础上有明确的技术改进</p>
+                                            <p><strong>创造性：</strong>需要进一步论证非显而易见性，建议补充更多技术细节和实验证据</p>
+                                            <p><strong>实用性：</strong>具有明确的技术效果和应用前景，满足实用性要求</p>
+                                            <p><strong>整体建议：</strong>建议在申请文件中重点强调技术组合的协同效应和意外技术效果</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化变量
+            let currentTab = 'claims';
+            let currentAssessment = 'formal';
+            let highlightEnabled = false;
+            
+            // 文件预览选项卡切换
+            const tabButtons = document.querySelectorAll('[data-tab]');
+            const tabContents = {
+                claims: document.getElementById('claimsContent'),
+                description: document.getElementById('descriptionContent'),
+                abstract: document.getElementById('abstractContent'),
+                drawings: document.getElementById('drawingsContent')
+            };
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tab = this.getAttribute('data-tab');
+                    
+                    // 更新按钮样式
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('bg-white', 'shadow-sm');
+                        btn.classList.add('text-gray-600', 'hover:bg-gray-50');
+                    });
+                    this.classList.add('bg-white', 'shadow-sm');
+                    this.classList.remove('text-gray-600', 'hover:bg-gray-50');
+                    
+                    // 显示对应内容
+                    Object.keys(tabContents).forEach(key => {
+                        if (tabContents[key]) {
+                            tabContents[key].classList.add('hidden');
+                        }
+                    });
+                    
+                    if (tabContents[tab]) {
+                        tabContents[tab].classList.remove('hidden');
+                        currentTab = tab;
+                    }
+                });
+            });
+            
+            // 评估类型选项卡切换
+            const assessmentButtons = document.querySelectorAll('[data-assessment]');
+            const assessmentContents = {
+                overall: document.getElementById('overallAssessment'),
+                formal: document.getElementById('formalAssessment'),
+                abnormal: document.getElementById('abnormalAssessment'),
+                novelty: document.getElementById('noveltyAssessment')
+            };
+            
+            assessmentButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const assessment = this.getAttribute('data-assessment');
+                    
+                    // 更新按钮样式
+                    assessmentButtons.forEach(btn => {
+                        // 移除所有按钮的激活状态
+                        btn.classList.remove(
+                            'bg-gradient-to-r', 'from-blue-50', 'to-blue-100', 'text-blue-700', 'border-b-2', 'border-blue-500',
+                            'bg-gradient-to-r', 'from-green-50', 'to-green-100', 'text-green-700', 'border-b-2', 'border-green-500',
+                            'bg-gradient-to-r', 'from-orange-50', 'to-orange-100', 'text-orange-700', 'border-b-2', 'border-orange-500',
+                            'bg-gradient-to-r', 'from-purple-50', 'to-purple-100', 'text-purple-700', 'border-b-2', 'border-purple-500'
+                        );
+                        // 恢复默认状态
+                        btn.classList.add('text-gray-600');
+                    });
+                    
+                    // 根据不同类型设置激活样式
+                    if (assessment === 'overall') {
+                        this.classList.add('bg-gradient-to-r', 'from-purple-50', 'to-purple-100', 'text-purple-700', 'border-b-2', 'border-purple-500');
+                        this.classList.remove('text-gray-600', 'hover:bg-blue-50', 'hover:text-blue-700', 'hover:bg-green-50', 'hover:text-green-700', 'hover:bg-orange-50', 'hover:text-orange-700');
+                    } else if (assessment === 'formal') {
+                        this.classList.add('bg-gradient-to-r', 'from-blue-50', 'to-blue-100', 'text-blue-700', 'border-b-2', 'border-blue-500');
+                        this.classList.remove('text-gray-600', 'hover:bg-green-50', 'hover:text-green-700', 'hover:bg-orange-50', 'hover:text-orange-700');
+                    } else if (assessment === 'abnormal') {
+                        this.classList.add('bg-gradient-to-r', 'from-green-50', 'to-green-100', 'text-green-700', 'border-b-2', 'border-green-500');
+                        this.classList.remove('text-gray-600', 'hover:bg-blue-50', 'hover:text-blue-700', 'hover:bg-orange-50', 'hover:text-orange-700');
+                    } else if (assessment === 'novelty') {
+                        this.classList.add('bg-gradient-to-r', 'from-orange-50', 'to-orange-100', 'text-orange-700', 'border-b-2', 'border-orange-500');
+                        this.classList.remove('text-gray-600', 'hover:bg-blue-50', 'hover:text-blue-700', 'hover:bg-green-50', 'hover:text-green-700');
+                    }
+                    
+                    // 显示对应内容
+                    Object.keys(assessmentContents).forEach(key => {
+                        if (assessmentContents[key]) {
+                            assessmentContents[key].classList.add('hidden');
+                        }
+                    });
+                    
+                    if (assessmentContents[assessment]) {
+                        assessmentContents[assessment].classList.remove('hidden');
+                        currentAssessment = assessment;
+                    }
+                });
+            });
+
+            // 添加新的函数来支持总体评估页面的功能
+            //function showDetailedAssessment() {
+                // 切换到形式审查页面
+                const formalBtn = document.querySelector('[data-assessment="formal"]');
+                if (formalBtn) {
+                    formalBtn.click();
+                }
+            //}
+
+            function locateIssue(type, index) {
+                // 根据问题类型定位到具体位置
+                console.log(`定位问题: ${type}, 索引: ${index}`);
+                
+                // 这里可以添加具体的定位逻辑
+                // 例如滚动到对应的问题位置或高亮显示
+                
+                // 如果需要切换到具体的评估页面
+                if (type === 'consistency' || type === 'language' || type === 'description' || type === 'claims' || type === 'format') {
+                    // 切换到形式审查页面
+                    const formalBtn = document.querySelector('[data-assessment="formal"]');
+                    if (formalBtn) {
+                        formalBtn.click();
+                    }
+                } else if (type === 'creativity' || type === 'comparison') {
+                    // 切换到新创性评估页面
+                    const noveltyBtn = document.querySelector('[data-assessment="novelty"]');
+                    if (noveltyBtn) {
+                        noveltyBtn.click();
+                    }
+                }
+            }
+
+            // 高亮问题按钮
+            const highlightBtn = document.getElementById('highlightBtn');
+            if (highlightBtn) {
+                highlightBtn.addEventListener('click', function() {
+                    highlightEnabled = !highlightEnabled;
+                    
+                    if (highlightEnabled) {
+                        this.classList.add('text-primary-600', 'bg-primary-50');
+                        this.classList.remove('text-gray-500');
+                    } else {
+                        this.classList.remove('text-primary-600', 'bg-primary-50');
+                        this.classList.add('text-gray-500');
+                    }
+                    
+                    // 切换高亮显示
+                    toggleHighlight();
+                });
+            }
+            
+            // 切换高亮显示函数
+            function toggleHighlight() {
+                const errorElements = document.querySelectorAll('.highlight-error');
+                const warningElements = document.querySelectorAll('.highlight-warning');
+                
+                if (highlightEnabled) {
+                    errorElements.forEach(el => el.classList.add('bg-red-100'));
+                    warningElements.forEach(el => el.classList.add('bg-yellow-100'));
+                } else {
+                    errorElements.forEach(el => el.classList.remove('bg-red-100'));
+                    warningElements.forEach(el => el.classList.remove('bg-yellow-100'));
+                }
+            }
+            
+            // 定位到问题位置
+            window.locateIssue = function(tab, section) {
+                // 切换到对应选项卡
+                tabButtons.forEach(btn => {
+                    if (btn.getAttribute('data-tab') === tab) {
+                        btn.click();
+                    }
+                });
+                
+                // 滚动到对应位置
+                if (tab === 'claims' && section) {
+                    const claimElement = document.querySelector(`#claimsContent div:nth-child(${section})`);
+                    if (claimElement) {
+                        claimElement.scrollIntoView({ behavior: 'smooth' });
+                        claimElement.classList.add('bg-yellow-50');
+                        setTimeout(() => {
+                            claimElement.classList.remove('bg-yellow-50');
+                        }, 2000);
+                    }
+                } else if (tab === 'description' && section) {
+                    const sectionElement = document.querySelector(`#descriptionContent section:nth-child(${section})`);
+                    if (sectionElement) {
+                        sectionElement.scrollIntoView({ behavior: 'smooth' });
+                        sectionElement.classList.add('bg-yellow-50');
+                        setTimeout(() => {
+                            sectionElement.classList.remove('bg-yellow-50');
+                        }, 2000);
+                    }
+                }
+            };
+            
+            // 显示对比文献详情
+            window.showPriorArt = function(docId) {
+                // 这里可以实现显示对比文献详情的功能
+                console.log('显示对比文献：', docId);
+                // 可以通过AJAX加载详细信息或打开新窗口
+            };
+            
+            // 新建评估按钮
+            const newCheckBtn = document.getElementById('newCheckBtn');
+            const aiCheckDialog = document.getElementById('aiCheckDialog');
+            
+            if (newCheckBtn && aiCheckDialog) {
+                newCheckBtn.addEventListener('click', function() {
+                    aiCheckDialog.classList.remove('hidden');
+                });
+            }
+            
+            // 关闭AI评估对话框
+            const closeAiDialog = document.getElementById('closeAiDialog');
+            if (closeAiDialog && aiCheckDialog) {
+                closeAiDialog.addEventListener('click', function() {
+                    aiCheckDialog.classList.add('hidden');
+                });
+            }
+            
+            // 关闭对话框函数
+            window.closeDialog = function() {
+                if (aiCheckDialog) {
+                    aiCheckDialog.classList.add('hidden');
+                }
+                if (noveltySearchDialog) {
+                    noveltySearchDialog.classList.add('hidden');
+                }
+            };
+            
+            
+            // 深度查新按钮
+            const deepSearchBtn = document.getElementById('deepSearchBtn');
+            if (deepSearchBtn) {
+                deepSearchBtn.addEventListener('click', function() {
+                    window.open('../jiaodishu/chaxin.html', '_blank'); // 打开新窗口进行查新检索
+                });
+            }
+            
+            // 文件上传模拟
+            const fileUpload = document.getElementById('fileUpload');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            
+            if (fileUpload && uploadProgress && progressBar && progressPercent) {
+                fileUpload.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        // 显示上传进度
+                        uploadProgress.classList.remove('hidden');
+                        
+                        // 模拟上传进度
+                        let progress = 0;
+                        const interval = setInterval(() => {
+                            progress += 5;
+                            if (progress > 100) {
+                                clearInterval(interval);
+                                progress = 100;
+                            }
+                            
+                            progressBar.style.width = `${progress}%`;
+                            progressPercent.textContent = `${progress}%`;
+                        }, 200);
+                    }
+                });
+            }
+            
+            // 开始评估函数
+            window.startAssessment = function() {
+                // 关闭对话框
+                if (aiCheckDialog) {
+                    aiCheckDialog.classList.add('hidden');
+                }
+                
+                // 这里可以实现开始评估的功能
+                console.log('开始智能评估');
+                // 可以通过AJAX提交评估请求或模拟评估过程
+                
+                // 显示评估结果（模拟）
+                setTimeout(() => {
+                    // 这里可以更新评估结果
+                    console.log('评估完成');
+                }, 2000);
+            };
+            
+            // 评估列表项点击事件
+            const checkListItems = document.querySelectorAll('#checkList li');
+            checkListItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // 更新选中状态
+                    checkListItems.forEach(li => li.classList.remove('bg-primary-50'));
+                    this.classList.add('bg-primary-50');
+                    
+                    // 这里可以加载对应评估的详细信息
+                    const id = this.getAttribute('data-id');
+                    console.log('加载评估ID:', id);
+                    // 可以通过AJAX加载评估详情
+                });
+            });
+            
+            // 初始化环形进度条
+            function initProgressRings() {
+                const rings = document.querySelectorAll('.progress-ring-circle');
+                rings.forEach(ring => {
+                    if (ring.hasAttribute('stroke-dasharray') && ring.hasAttribute('stroke-dashoffset')) {
+                        const radius = ring.getAttribute('r');
+                        const circumference = 2 * Math.PI * radius;
+                        ring.style.strokeDasharray = `${circumference} ${circumference}`;
+                        
+                        // 获取当前进度值
+                        const offset = ring.getAttribute('stroke-dashoffset');
+                        ring.style.strokeDashoffset = offset;
+                    }
+                });
+            }
+            
+            // 初始化环形进度条
+            initProgressRings();
+        });
+
+        // 开始形式审查
+        function startFormalAssessment() {
+            document.getElementById('formalAssessmentDefault').classList.add('hidden');
+            document.getElementById('formalAssessmentResults').classList.remove('hidden');
+        }
+
+        // 开始非正常申请评估
+        function startAbnormalAssessment() {
+            document.getElementById('abnormalAssessmentDefault').classList.add('hidden');
+            document.getElementById('abnormalAssessmentResults').classList.remove('hidden');
+        }
+
+        // 开始新创性评估
+        function startNoveltyAssessment() {
+            document.getElementById('noveltyAssessmentDefault').classList.add('hidden');
+            document.getElementById('noveltyAssessmentResults').classList.remove('hidden');
+        }
+
+        // 状态切换功能
+        function toggleStatus(itemId) {
+            const statusElement = document.getElementById(itemId + 'Status');
+            const currentStatus = statusElement.textContent.trim();
+            
+            // 定义状态循环：通过 -> 部分通过 -> 不通过 -> 通过
+            let newStatus, newClass;
+            
+            switch(currentStatus) {
+                case '通过':
+                    newStatus = '部分通过';
+                    newClass = 'bg-yellow-100 text-yellow-800';
+                    break;
+                case '部分通过':
+                    newStatus = '不通过';
+                    newClass = 'bg-red-100 text-red-800';
+                    break;
+                case '不通过':
+                    newStatus = '通过';
+                    newClass = 'bg-green-100 text-green-800';
+                    break;
+                default:
+                    newStatus = '通过';
+                    newClass = 'bg-green-100 text-green-800';
+            }
+            
+            // 更新状态显示
+            statusElement.textContent = newStatus;
+            statusElement.className = `text-xs px-2 py-0.5 rounded ${newClass}`;
+            
+            // 更新父容器的边框颜色
+            const parentContainer = statusElement.closest('.bg-white');
+            if (parentContainer) {
+                // 移除所有可能的边框颜色类
+                parentContainer.classList.remove('border-green-200', 'border-yellow-200', 'border-red-200');
+                
+                // 根据新状态添加相应的边框颜色
+                switch(newStatus) {
+                    case '通过':
+                        parentContainer.classList.add('border-green-200');
+                        break;
+                    case '部分通过':
+                        parentContainer.classList.add('border-yellow-200');
+                        break;
+                    case '不通过':
+                        parentContainer.classList.add('border-red-200');
+                        break;
+                }
+            }
+            
+            // 更新图标颜色
+            const icon = parentContainer.querySelector('i');
+            if (icon) {
+                icon.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600');
+                switch(newStatus) {
+                    case '通过':
+                        icon.classList.add('text-green-600');
+                        break;
+                    case '部分通过':
+                        icon.classList.add('text-yellow-600');
+                        break;
+                    case '不通过':
+                        icon.classList.add('text-red-600');
+                        break;
+                }
+            }
+            
+            // 可选：更新总体评估状态
+            updateOverallStatus();
+        }
+        
+        // 更新总体评估状态
+        function updateOverallStatus() {
+            // 这里可以添加逻辑来根据各个项目的状态更新总体评估结果
+            console.log('Overall status updated');
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权利要求架构构建器</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.css">
+    <style>
+        .draggable-handle {
+            cursor: grab;
+        }
+        .draggable-handle:active {
+            cursor: grabbing;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+        }
+        .sortable-chosen {
+            background-color: #f3f4f6;
+        }
+        .editable:focus {
+            outline: 2px solid #3b82f6;
+            border-radius: 4px;
+            padding: 2px;
+        }
+        .feature-item, .benefit-item, .example-item {
+            transition: all 0.2s;
+        }
+        .feature-item:hover, .benefit-item:hover, .example-item:hover {
+            transform: translateY(-2px);
+        }
+        .tooltip {
+            position: relative;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 120px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .history-item {
+            transition: all 0.3s;
+        }
+        .history-item:hover {
+            background-color: #f3f4f6;
+        }
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <div class="w-full px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold text-gray-800">构建权利要求</h1>
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">v2.0</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="btn-save-all" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                    <i class="fas fa-save mr-2"></i>保存全部
+                </button>
+                <button id="btn-generate-claims" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                    <i class="fas fa-file-alt mr-2"></i>生成权利要求书
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full min-h-screen px-2 py-2 flex space-x-2">
+        <!-- 左侧：保护客体和权利要求树状结构 -->
+        <div class="w-1/4 bg-white rounded-xl shadow-md p-4 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">保护客体与权利要求</h2>
+                <button id="btn-add-protection-object" class="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="search-box mb-4">
+                <div class="relative">
+                    <input type="text" id="search-tree" placeholder="搜索..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div id="protection-objects-list" class="flex-1 overflow-y-auto">
+                <!-- 保护客体和权利要求将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 中央：编辑区域 -->
+        <div class="w-2/4 bg-white rounded-xl shadow-md flex flex-col">
+            <!-- 编辑区标题栏 -->
+            <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl flex items-center justify-between">
+                <h3 id="editor-title" class="text-lg font-semibold text-gray-900">请选择保护客体或权利要求</h3>
+                <div class="flex items-center space-x-2">
+                    <button id="btn-undo" class="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button id="btn-redo" class="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50" disabled>
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 编辑区内容 -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- 默认提示 -->
+                <div id="default-editor" class="flex items-center justify-center h-full text-gray-500">
+                    <div class="text-center">
+                        <i class="fas fa-mouse-pointer text-4xl mb-4"></i>
+                        <p>请从左侧选择一个保护客体或权利要求进行编辑</p>
+                    </div>
+                </div>
+                
+                <!-- 保护客体编辑器 -->
+                <div id="protection-object-editor" class="hidden">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">保护客体名称</label>
+                            <input type="text" id="po-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">保护客体类型</label>
+                            <div class="flex space-x-3">
+                                <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="po-type" value="method" class="mr-3">
+                                    <div>
+                                        <i class="fas fa-cogs text-blue-500 mr-2"></i>
+                                        <span>方法</span>
+                                    </div>
+                                </label>
+                                <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="po-type" value="device" class="mr-3">
+                                    <div>
+                                        <i class="fas fa-microchip text-purple-500 mr-2"></i>
+                                        <span>装置</span>
+                                    </div>
+                                </label>
+                                <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="po-type" value="product" class="mr-3">
+                                    <div>
+                                        <i class="fas fa-box text-green-500 mr-2"></i>
+                                        <span>产品</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">保护客体描述</label>
+                            <textarea id="po-description" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button id="btn-save-po" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-2"></i>保存配置
+                            </button>
+                            <button id="btn-cancel-po" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                                <i class="fas fa-times mr-2"></i>取消
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 权利要求编辑器 -->
+                <div id="claim-editor" class="hidden">
+                    <div class="space-y-6">
+                        <!-- 权利要求类型 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">权利要求类型</label>
+                            <div class="flex space-x-3">
+                                <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="claim-type" value="independent" class="mr-3">
+                                    <div>
+                                        <i class="fas fa-star text-green-500 mr-2"></i>
+                                        <span>独立权利要求</span>
+                                    </div>
+                                </label>
+                                <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="claim-type" value="dependent" class="mr-3">
+                                    <div>
+                                        <i class="fas fa-link text-blue-500 mr-2"></i>
+                                        <span>从属权利要求</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 引用关系 -->
+                        <div id="dependent-claim-ref" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">引用权利要求</label>
+                            <select id="claim-reference" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <!-- 动态生成选项 -->
+                            </select>
+                        </div>
+
+                        <!-- 技术特征和有益效果标签页 -->
+                        <div>
+                            <div class="flex border-b border-gray-200 mb-4">
+                                <button class="tab-btn tab-active px-4 py-2 text-sm font-medium" data-tab="features-tab">技术特征</button>
+                                <button class="tab-btn px-4 py-2 text-sm font-medium" data-tab="benefits-tab">有益效果</button>
+                            </div>
+                            
+                            <!-- 技术特征标签页内容 -->
+                            <div id="features-tab" class="tab-content">
+                                <!-- 必要技术特征 -->
+                                <div class="mb-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h6 class="text-sm font-medium text-gray-700">必要技术特征</h6>
+                                        <div class="flex items-center space-x-2">
+                                            <button id="btn-add-necessary" class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors">
+                                                <i class="fas fa-plus mr-1"></i>添加特征
+                                            </button>
+                                            <button id="btn-select-necessary" class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors">
+                                                <i class="fas fa-list mr-1"></i>从库选择
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="necessary-features" class="space-y-3 mb-4">
+                                        <!-- 动态生成必要技术特征 -->
+                                    </div>
+                                </div>
+                                
+                                <!-- 区别技术特征 -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h6 class="text-sm font-medium text-gray-700">区别技术特征</h6>
+                                        <div class="flex items-center space-x-2">
+                                            <button id="btn-add-distinctive" class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200 transition-colors">
+                                                <i class="fas fa-plus mr-1"></i>添加特征
+                                            </button>
+                                            <button id="btn-select-distinctive" class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors">
+                                                <i class="fas fa-list mr-1"></i>从库选择
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="distinctive-features" class="space-y-3">
+                                        <!-- 动态生成区别技术特征 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 有益效果标签页内容 -->
+                            <div id="benefits-tab" class="tab-content hidden">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h6 class="text-sm font-medium text-gray-700">有益效果</h6>
+                                    <div class="flex items-center space-x-2">
+                                        <button id="btn-add-benefit" class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors">
+                                            <i class="fas fa-plus mr-1"></i>添加效果
+                                        </button>
+                                        <button id="btn-select-benefit" class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors">
+                                            <i class="fas fa-list mr-1"></i>从库选择
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="benefits-list" class="space-y-3">
+                                    <!-- 动态生成有益效果 -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 权利要求内容 -->
+                        <div class="p-3 border-t">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-sm font-medium text-gray-700">权利要求内容</label>
+                                <button id="btn-generate-content" class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors">
+                                    <i class="fas fa-magic mr-1"></i>自动生成
+                                </button>
+                            </div>
+                            <textarea id="claim-content" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+
+                        <!-- 操作按钮 -->
+                        <div class="flex space-x-3">
+                            <button id="btn-save-claim" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-2"></i>保存配置
+                            </button>
+                            <button id="btn-cancel-claim" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                                <i class="fas fa-times mr-2"></i>取消
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：工具区 -->
+        <div class="w-1/4 flex flex-col space-y-4">
+            <!-- 技术特征库 -->
+            <div class="bg-white rounded-xl shadow-md p-4 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">技术特征库</h2>
+                    <button id="btn-add-feature-to-library" class="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="search-box mb-4">
+                    <div class="relative">
+                        <input type="text" id="search-features" placeholder="搜索特征..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+                <div id="feature-library" class="flex-1 overflow-y-auto max-h-64">
+                    <!-- 动态生成技术特征库内容 -->
+                </div>
+            </div>
+            
+            <!-- 有益效果库 -->
+            <div class="bg-white rounded-xl shadow-md p-4 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">有益效果库</h2>
+                    <button id="btn-add-benefit-to-library" class="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="search-box mb-4">
+                    <div class="relative">
+                        <input type="text" id="search-benefits" placeholder="搜索效果..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+                <div id="benefit-library" class="flex-1 overflow-y-auto max-h-64">
+                    <!-- 动态生成有益效果库内容 -->
+                </div>
+            </div>
+            
+            <!-- 操作历史 -->
+            <div class="bg-white rounded-xl shadow-md p-4 flex flex-col">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">操作历史</h2>
+                <div id="operation-history" class="flex-1 overflow-y-auto max-h-64">
+                    <!-- 动态生成操作历史 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 模态框：技术特征选择 -->
+    <div id="feature-selection-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-2/3 max-h-3/4 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">选择技术特征</h3>
+                <div class="flex items-center space-x-2">
+                    <button id="btn-new-feature" class="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button id="btn-close-feature-modal" class="p-2 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="search-box mb-4">
+                <div class="relative">
+                    <input type="text" id="search-modal-features" placeholder="搜索特征..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto mb-4">
+                <div id="feature-selection-list" class="space-y-3">
+                    <!-- 动态生成特征选择列表 -->
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button id="btn-add-selected-features" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>添加选中特征
+                </button>
+                <button id="btn-cancel-feature-selection" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：有益效果选择 -->
+    <div id="benefit-selection-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-2/3 max-h-3/4 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">选择有益效果</h3>
+                <div class="flex items-center space-x-2">
+                    <button id="btn-new-benefit" class="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button id="btn-close-benefit-modal" class="p-2 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="search-box mb-4">
+                <div class="relative">
+                    <input type="text" id="search-modal-benefits" placeholder="搜索效果..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto mb-4">
+                <div id="benefit-selection-list" class="space-y-3">
+                    <!-- 动态生成效果选择列表 -->
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button id="btn-add-selected-benefits" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>添加选中效果
+                </button>
+                <button id="btn-cancel-benefit-selection" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                    <i class="fas fa-times mr-2"></i>取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：实施例管理 -->
+    <div id="example-management-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-2/3 max-h-3/4 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="example-modal-title" class="text-lg font-semibold text-gray-900">管理实施例</h3>
+                <button id="btn-close-example-modal" class="p-2 text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto mb-4">
+                <div id="example-list" class="space-y-3">
+                    <!-- 动态生成实施例列表 -->
+                </div>
+                <button id="btn-add-example" class="w-full mt-4 p-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 text-sm transition-colors">
+                    <i class="fas fa-plus mr-2"></i>添加实施例
+                </button>
+            </div>
+            
+            <div class="flex justify-end">
+                <button id="btn-save-examples" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>保存实施例
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：生成权利要求书 -->
+    <div id="generate-claims-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-2/3 max-h-3/4 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">生成权利要求书</h3>
+                <button id="btn-close-generate-modal" class="p-2 text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">格式选项</label>
+                <div class="flex space-x-3">
+                    <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="format-option" value="standard" class="mr-3" checked>
+                        <div>
+                            <span class="font-medium">标准格式</span>
+                            <p class="text-xs text-gray-500 mt-1">符合专利申请标准的权利要求书格式</p>
+                        </div>
+                    </label>
+                    <label class="flex-1 flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="format-option" value="detailed" class="mr-3">
+                        <div>
+                            <span class="font-medium">详细格式</span>
+                            <p class="text-xs text-gray-500 mt-1">包含技术特征和有益效果的详细说明</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto mb-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <pre id="preview-claims" class="text-sm text-gray-800 whitespace-pre-wrap">权利要求书预览将在这里显示...</pre>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button id="btn-preview-claims" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-eye mr-2"></i>预览
+                </button>
+                <button id="btn-export-claims" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-file-export mr-2"></i>导出
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入SortableJS库 -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+        // 全局变量
+        let currentSelection = null;
+        let protectionObjects = {};
+        let featureLibrary = [];
+        let benefitLibrary = [];
+        let operationHistory = [];
+        let historyPosition = -1;
+        let nextPoId = 1;
+        let nextClaimId = 1;
+        let nextFeatureId = 1;
+        let nextBenefitId = 1;
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            renderProtectionObjectsList();
+            renderFeatureLibrary();
+            renderBenefitLibrary();
+            initializeSortable();
+            initializeEventListeners();
+            addOperationHistoryItem('页面初始化完成');
+        });
+        
+        // 初始化可排序功能
+        function initializeSortable() {
+            // 保护客体列表排序
+            if (document.getElementById('protection-objects-list')) {
+                new Sortable(document.getElementById('protection-objects-list'), {
+                    handle: '.draggable-handle',
+                    animation: 150,
+                    onEnd: function(evt) {
+                        addOperationHistoryItem(`移动了保护客体 ${evt.oldIndex + 1} 到位置 ${evt.newIndex + 1}`);
+                    }
+                });
+            }
+            
+            // 必要技术特征排序
+            if (document.getElementById('necessary-features')) {
+                new Sortable(document.getElementById('necessary-features'), {
+                    handle: '.draggable-handle',
+                    animation: 150,
+                    onEnd: function(evt) {
+                        addOperationHistoryItem(`移动了必要技术特征 ${evt.oldIndex + 1} 到位置 ${evt.newIndex + 1}`);
+                    }
+                });
+            }
+            
+            // 区别技术特征排序
+            if (document.getElementById('distinctive-features')) {
+                new Sortable(document.getElementById('distinctive-features'), {
+                    handle: '.draggable-handle',
+                    animation: 150,
+                    onEnd: function(evt) {
+                        addOperationHistoryItem(`移动了区别技术特征 ${evt.oldIndex + 1} 到位置 ${evt.newIndex + 1}`);
+                    }
+                });
+            }
+            
+            // 有益效果排序
+            if (document.getElementById('benefits-list')) {
+                new Sortable(document.getElementById('benefits-list'), {
+                    handle: '.draggable-handle',
+                    animation: 150,
+                    onEnd: function(evt) {
+                        addOperationHistoryItem(`移动了有益效果 ${evt.oldIndex + 1} 到位置 ${evt.newIndex + 1}`);
+                    }
+                });
+            }
+        }
+        
+        // 初始化事件监听器
+        function initializeEventListeners() {
+            // 添加保护客体按钮
+            const btnAddPo = document.getElementById('btn-add-protection-object');
+            if (btnAddPo) btnAddPo.addEventListener('click', addProtectionObject);
+            
+            // 保存保护客体按钮
+            const btnSavePo = document.getElementById('btn-save-po');
+            if (btnSavePo) btnSavePo.addEventListener('click', saveProtectionObjectConfig);
+            
+            // 取消保护客体编辑按钮
+            const btnCancelPo = document.getElementById('btn-cancel-po');
+            if (btnCancelPo) btnCancelPo.addEventListener('click', cancelConfig);
+            
+            // 保存权利要求按钮
+            const btnSaveClaim = document.getElementById('btn-save-claim');
+            if (btnSaveClaim) btnSaveClaim.addEventListener('click', saveClaimConfig);
+            
+            // 取消权利要求编辑按钮
+            const btnCancelClaim = document.getElementById('btn-cancel-claim');
+            if (btnCancelClaim) btnCancelClaim.addEventListener('click', cancelConfig);
+            
+            // 权利要求类型切换
+            const claimTypeRadios = document.querySelectorAll('input[name="claim-type"]');
+            claimTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const dependentRef = document.getElementById('dependent-claim-ref');
+                    if (this.value === 'dependent') {
+                        dependentRef.classList.remove('hidden');
+                        updateClaimReferences();
+                    } else {
+                        dependentRef.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // 标签页切换
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.dataset.tab;
+                    
+                    // 移除所有活动状态
+                    tabButtons.forEach(btn => btn.classList.remove('tab-active'));
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                    
+                    // 激活当前标签
+                    this.classList.add('tab-active');
+                    const targetElement = document.getElementById(targetTab);
+                    if (targetElement) targetElement.classList.remove('hidden');
+                });
+            });
+            
+            // 技术特征相关按钮
+            const btnAddNecessary = document.getElementById('btn-add-necessary');
+            if (btnAddNecessary) btnAddNecessary.addEventListener('click', () => addFeature('necessary'));
+            
+            const btnAddDistinctive = document.getElementById('btn-add-distinctive');
+            if (btnAddDistinctive) btnAddDistinctive.addEventListener('click', () => addFeature('distinctive'));
+            
+            const btnSelectNecessary = document.getElementById('btn-select-necessary');
+            if (btnSelectNecessary) btnSelectNecessary.addEventListener('click', () => showFeatureLibrary('necessary'));
+            
+            const btnSelectDistinctive = document.getElementById('btn-select-distinctive');
+            if (btnSelectDistinctive) btnSelectDistinctive.addEventListener('click', () => showFeatureLibrary('distinctive'));
+            
+            // 有益效果相关按钮
+            const btnAddBenefit = document.getElementById('btn-add-benefit');
+            if (btnAddBenefit) btnAddBenefit.addEventListener('click', addBenefit);
+            
+            const btnSelectBenefit = document.getElementById('btn-select-benefit');
+            if (btnSelectBenefit) btnSelectBenefit.addEventListener('click', showBenefitLibrary);
+            
+            // 库管理按钮
+            const btnAddFeatureToLibrary = document.getElementById('btn-add-feature-to-library');
+            if (btnAddFeatureToLibrary) btnAddFeatureToLibrary.addEventListener('click', addFeatureToLibrary);
+            
+            const btnAddBenefitToLibrary = document.getElementById('btn-add-benefit-to-library');
+            if (btnAddBenefitToLibrary) btnAddBenefitToLibrary.addEventListener('click', addBenefitToLibrary);
+            
+            // 搜索功能
+            const searchTree = document.getElementById('search-tree');
+            if (searchTree) searchTree.addEventListener('input', searchTree);
+            
+            const searchFeatures = document.getElementById('search-features');
+            if (searchFeatures) searchFeatures.addEventListener('input', searchFeatures);
+            
+            const searchBenefits = document.getElementById('search-benefits');
+            if (searchBenefits) searchBenefits.addEventListener('input', searchBenefits);
+            
+            // 撤销重做按钮
+            const btnUndo = document.getElementById('btn-undo');
+            if (btnUndo) btnUndo.addEventListener('click', undo);
+            
+            const btnRedo = document.getElementById('btn-redo');
+            if (btnRedo) btnRedo.addEventListener('click', redo);
+            
+            // 生成权利要求书按钮
+            const btnGenerateClaims = document.getElementById('btn-generate-claims');
+            if (btnGenerateClaims) btnGenerateClaims.addEventListener('click', generateClaimsDocument);
+            
+            // 自动生成内容按钮
+            const btnGenerateContent = document.getElementById('btn-generate-content');
+            if (btnGenerateContent) btnGenerateContent.addEventListener('click', generateClaimContent);
+            
+            // 模态框关闭按钮
+            const btnCloseFeatureModal = document.getElementById('btn-close-feature-modal');
+            if (btnCloseFeatureModal) btnCloseFeatureModal.addEventListener('click', closeFeatureModal);
+            
+            const btnCloseBenefitModal = document.getElementById('btn-close-benefit-modal');
+            if (btnCloseBenefitModal) btnCloseBenefitModal.addEventListener('click', closeBenefitModal);
+            
+            const btnCloseExampleModal = document.getElementById('btn-close-example-modal');
+            if (btnCloseExampleModal) btnCloseExampleModal.addEventListener('click', closeExampleModal);
+            
+            const btnCloseGenerateModal = document.getElementById('btn-close-generate-modal');
+            if (btnCloseGenerateModal) btnCloseGenerateModal.addEventListener('click', closeGenerateModal);
+        }
+        
+        // 渲染保护客体列表
+        function renderProtectionObjectsList() {
+            const container = document.getElementById('protection-objects-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (Object.keys(protectionObjects).length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-8"><i class="fas fa-plus-circle text-2xl mb-2"></i><p>点击上方按钮添加保护客体</p></div>';
+                return;
+            }
+            
+            for (const [poId, po] of Object.entries(protectionObjects)) {
+                const poElement = createProtectionObjectElement(poId, po);
+                container.appendChild(poElement);
+            }
+        }
+        
+        // 创建保护客体元素
+        function createProtectionObjectElement(poId, po) {
+            const div = document.createElement('div');
+            div.className = 'protection-object mb-4 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow';
+            div.dataset.poId = poId;
+            
+            const typeIcon = getTypeIcon(po.type);
+            const typeColor = getTypeColor(po.type);
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2 cursor-pointer" onclick="selectProtectionObject(${poId})">
+                        <i class="fas fa-grip-vertical draggable-handle text-gray-400"></i>
+                        <i class="fas fa-${typeIcon} text-${typeColor}-600"></i>
+                        <span class="font-medium text-gray-800">${po.name}</span>
+                        <span class="px-2 py-1 bg-${typeColor}-100 text-${typeColor}-800 text-xs rounded-full">${getTypeName(po.type)}</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="addClaim(${poId})" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="添加权利要求">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                        <button onclick="removeProtectionObject(${poId})" class="p-1 text-red-600 hover:text-red-800 transition-colors" title="删除保护客体">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="claims-list ml-6 space-y-2">
+                    ${renderClaimsList(poId, po.claims || {})}
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 渲染权利要求列表
+        function renderClaimsList(poId, claims) {
+            if (!claims || Object.keys(claims).length === 0) {
+                return '<div class="text-gray-400 text-sm py-2">暂无权利要求</div>';
+            }
+            
+            let html = '';
+            const sortedClaims = Object.entries(claims).sort(([a], [b]) => parseInt(a) - parseInt(b));
+            
+            for (const [claimId, claim] of sortedClaims) {
+                const globalNumber = getGlobalClaimNumber(poId, claimId);
+                const isIndependent = claim.type === 'independent';
+                
+                html += `
+                    <div class="claim-item p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors" 
+                         data-po-id="${poId}" data-claim-id="${claimId}" onclick="selectClaim(${poId}, ${claimId})">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-grip-vertical draggable-handle text-gray-400 text-xs"></i>
+                                <span class="w-6 h-6 rounded-full ${isIndependent ? 'bg-green-500' : 'bg-blue-500'} text-white text-xs font-bold flex items-center justify-center">
+                                    ${globalNumber}
+                                </span>
+                                <span class="text-sm text-gray-700">
+                                    ${claim.content ? claim.content.substring(0, 50) + '...' : '未设置内容'}
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="event.stopPropagation(); moveClaim(${poId}, ${claimId}, 'up')" class="p-1 text-gray-500 hover:text-gray-700" title="上移">
+                                    <i class="fas fa-arrow-up text-xs"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); moveClaim(${poId}, ${claimId}, 'down')" class="p-1 text-gray-500 hover:text-gray-700" title="下移">
+                                    <i class="fas fa-arrow-down text-xs"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); removeClaim(${poId}, ${claimId})" class="p-1 text-red-600 hover:text-red-800" title="删除">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        // 获取类型图标
+        function getTypeIcon(type) {
+            const icons = {
+                'method': 'cogs',
+                'device': 'microchip',
+                'product': 'box',
+                'material': 'flask'
+            };
+            return icons[type] || 'question';
+        }
+        
+        // 获取类型颜色
+        function getTypeColor(type) {
+            const colors = {
+                'method': 'blue',
+                'device': 'purple',
+                'product': 'green',
+                'material': 'orange'
+            };
+            return colors[type] || 'gray';
+        }
+        
+        // 获取类型名称
+        function getTypeName(type) {
+            const names = {
+                'method': '方法',
+                'device': '装置',
+                'product': '产品',
+                'material': '材料'
+            };
+            return names[type] || '未知';
+        }
+        
+        // 获取全局权利要求编号
+        function getGlobalClaimNumber(poId, claimId) {
+            let globalNumber = 1;
+            
+            for (const [currentPoId, po] of Object.entries(protectionObjects)) {
+                if (currentPoId == poId) {
+                    const sortedClaims = Object.entries(po.claims || {}).sort(([a], [b]) => parseInt(a) - parseInt(b));
+                    for (const [currentClaimId] of sortedClaims) {
+                        if (currentClaimId == claimId) {
+                            return globalNumber;
+                        }
+                        globalNumber++;
+                    }
+                } else {
+                    globalNumber += Object.keys(po.claims || {}).length;
+                }
+            }
+            
+            return globalNumber;
+        }
+        
+        // 添加保护客体
+        function addProtectionObject() {
+            const newPo = {
+                name: '新保护客体',
+                type: 'method',
+                description: '',
+                claims: {}
+            };
+            
+            protectionObjects[nextPoId] = newPo;
+            nextPoId++;
+            
+            renderProtectionObjectsList();
+            selectProtectionObject(nextPoId - 1);
+            addOperationHistoryItem('添加了新保护客体');
+        }
+        
+        // 删除保护客体
+        function removeProtectionObject(poId) {
+            if (confirm('确定要删除这个保护客体及其所有权利要求吗？')) {
+                delete protectionObjects[poId];
+                renderProtectionObjectsList();
+                showDefaultEditor();
+                addOperationHistoryItem('删除了保护客体');
+            }
+        }
+        
+        // 选择保护客体
+        function selectProtectionObject(poId) {
+            currentSelection = { type: 'protection-object', poId: poId };
+            showProtectionObjectEditor(poId);
+            updateEditorTitle('编辑保护客体');
+        }
+        
+        // 显示保护客体编辑器
+        function showProtectionObjectEditor(poId) {
+            hideAllEditors();
+            
+            const editor = document.getElementById('protection-object-editor');
+            if (!editor) return;
+            
+            editor.classList.remove('hidden');
+            
+            const po = protectionObjects[poId];
+            if (!po) return;
+            
+            // 填充表单
+            const nameInput = document.getElementById('po-name');
+            if (nameInput) nameInput.value = po.name || '';
+            
+            const typeRadios = document.querySelectorAll('input[name="po-type"]');
+            typeRadios.forEach(radio => {
+                radio.checked = radio.value === po.type;
+            });
+            
+            const descInput = document.getElementById('po-description');
+            if (descInput) descInput.value = po.description || '';
+        }
+        
+        // 保存保护客体配置
+        function saveProtectionObjectConfig() {
+            if (!currentSelection || currentSelection.type !== 'protection-object') return;
+            
+            const poId = currentSelection.poId;
+            const po = protectionObjects[poId];
+            if (!po) return;
+            
+            // 获取表单数据
+            const nameInput = document.getElementById('po-name');
+            const descInput = document.getElementById('po-description');
+            const typeRadio = document.querySelector('input[name="po-type"]:checked');
+            
+            if (nameInput) po.name = nameInput.value.trim() || '未命名保护客体';
+            if (descInput) po.description = descInput.value.trim();
+            if (typeRadio) po.type = typeRadio.value;
+            
+            renderProtectionObjectsList();
+            addOperationHistoryItem('保存了保护客体配置');
+            
+            // 显示成功提示
+            showNotification('保护客体配置已保存', 'success');
+        }
+        
+        // 添加权利要求
+        function addClaim(poId) {
+            const po = protectionObjects[poId];
+            if (!po) return;
+            
+            if (!po.claims) po.claims = {};
+            
+            const newClaim = {
+                type: 'independent',
+                content: '',
+                features: {
+                    necessary: [],
+                    distinctive: []
+                },
+                benefits: []
+            };
+            
+            po.claims[nextClaimId] = newClaim;
+            nextClaimId++;
+            
+            renderProtectionObjectsList();
+            selectClaim(poId, nextClaimId - 1);
+            addOperationHistoryItem('添加了新权利要求');
+        }
+        
+        // 删除权利要求
+        function removeClaim(poId, claimId) {
+            if (confirm('确定要删除这个权利要求吗？')) {
+                const po = protectionObjects[poId];
+                if (po && po.claims) {
+                    delete po.claims[claimId];
+                    renderProtectionObjectsList();
+                    showDefaultEditor();
+                    addOperationHistoryItem('删除了权利要求');
+                }
+            }
+        }
+        
+        // 移动权利要求
+        function moveClaim(poId, claimId, direction) {
+            const po = protectionObjects[poId];
+            if (!po || !po.claims) return;
+            
+            const claimIds = Object.keys(po.claims).map(id => parseInt(id)).sort((a, b) => a - b);
+            const currentIndex = claimIds.indexOf(parseInt(claimId));
+            
+            if (direction === 'up' && currentIndex > 0) {
+                // 交换位置
+                const temp = po.claims[claimIds[currentIndex]];
+                po.claims[claimIds[currentIndex]] = po.claims[claimIds[currentIndex - 1]];
+                po.claims[claimIds[currentIndex - 1]] = temp;
+            } else if (direction === 'down' && currentIndex < claimIds.length - 1) {
+                // 交换位置
+                const temp = po.claims[claimIds[currentIndex]];
+                po.claims[claimIds[currentIndex]] = po.claims[claimIds[currentIndex + 1]];
+                po.claims[claimIds[currentIndex + 1]] = temp;
+            }
+            
+            renderProtectionObjectsList();
+            addOperationHistoryItem(`移动了权利要求 ${direction === 'up' ? '上移' : '下移'}`);
+        }
+        
+        // 选择权利要求
+        function selectClaim(poId, claimId) {
+            currentSelection = { type: 'claim', poId: poId, claimId: claimId };
+            showClaimEditor(poId, claimId);
+            updateEditorTitle('编辑权利要求');
+        }
+        
+        // 显示权利要求编辑器
+        function showClaimEditor(poId, claimId) {
+            hideAllEditors();
+            
+            const editor = document.getElementById('claim-editor');
+            if (!editor) return;
+            
+            editor.classList.remove('hidden');
+            
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim) return;
+            
+            // 填充表单
+            const typeRadios = document.querySelectorAll('input[name="claim-type"]');
+            typeRadios.forEach(radio => {
+                radio.checked = radio.value === claim.type;
+            });
+            
+            // 处理从属权利要求引用
+            const dependentRef = document.getElementById('dependent-claim-ref');
+            if (claim.type === 'dependent') {
+                dependentRef.classList.remove('hidden');
+                updateClaimReferences();
+                const refSelect = document.getElementById('claim-reference');
+                if (refSelect && claim.reference) {
+                    refSelect.value = claim.reference;
+                }
+            } else {
+                dependentRef.classList.add('hidden');
+            }
+            
+            const contentInput = document.getElementById('claim-content');
+            if (contentInput) contentInput.value = claim.content || '';
+            
+            // 渲染技术特征和有益效果
+            renderFeatures(claim.features || { necessary: [], distinctive: [] });
+            renderBenefits(claim.benefits || []);
+        }
+        
+        // 更新权利要求引用选项
+        function updateClaimReferences() {
+            const select = document.getElementById('claim-reference');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">请选择引用的权利要求</option>';
+            
+            for (const [poId, po] of Object.entries(protectionObjects)) {
+                if (!po.claims) continue;
+                
+                for (const [claimId, claim] of Object.entries(po.claims)) {
+                    if (claim.type === 'independent') {
+                        const globalNumber = getGlobalClaimNumber(poId, claimId);
+                        const option = document.createElement('option');
+                        option.value = globalNumber;
+                        option.textContent = `权利要求${globalNumber}`;
+                        select.appendChild(option);
+                    }
+                }
+            }
+        }
+        
+        // 保存权利要求配置
+        function saveClaimConfig() {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim) return;
+            
+            // 获取表单数据
+            const typeRadio = document.querySelector('input[name="claim-type"]:checked');
+            const contentInput = document.getElementById('claim-content');
+            const refSelect = document.getElementById('claim-reference');
+            
+            if (typeRadio) claim.type = typeRadio.value;
+            if (contentInput) claim.content = contentInput.value.trim();
+            
+            if (claim.type === 'dependent' && refSelect && refSelect.value) {
+                claim.reference = parseInt(refSelect.value);
+            } else {
+                delete claim.reference;
+            }
+            
+            renderProtectionObjectsList();
+            addOperationHistoryItem('保存了权利要求配置');
+            
+            // 显示成功提示
+            showNotification('权利要求配置已保存', 'success');
+        }
+        
+        // 渲染技术特征
+        function renderFeatures(features) {
+            renderFeatureList('necessary-features', features.necessary || []);
+            renderFeatureList('distinctive-features', features.distinctive || []);
+        }
+        
+        // 渲染特征列表
+        function renderFeatureList(containerId, features) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (features.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-sm py-2">暂无技术特征</div>';
+                return;
+            }
+            
+            features.forEach((feature, index) => {
+                const featureElement = createFeatureElement(feature, index, containerId.includes('distinctive'));
+                container.appendChild(featureElement);
+            });
+        }
+        
+        // 创建技术特征元素
+        function createFeatureElement(feature, index, isDistinctive) {
+            const div = document.createElement('div');
+            div.className = 'feature-item p-3 border border-gray-200 rounded-lg bg-gray-50';
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-grip-vertical draggable-handle text-gray-400"></i>
+                        <span class="font-medium text-gray-800">${feature.name || '未命名特征'}</span>
+                        ${isDistinctive ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">区别</span>' : ''}
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="editFeature(${index}, '${isDistinctive ? 'distinctive' : 'necessary'}')" class="p-1 text-blue-600 hover:text-blue-800" title="编辑">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button onclick="removeFeature(${index}, '${isDistinctive ? 'distinctive' : 'necessary'}')" class="p-1 text-red-600 hover:text-red-800" title="删除">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="examples-list">
+                    ${renderExamples(feature.examples || [])}
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 渲染实施例
+        function renderExamples(examples) {
+            if (!examples || examples.length === 0) {
+                return '<div class="text-gray-400 text-xs">暂无实施例</div>';
+            }
+            
+            return examples.map(example => 
+                `<div class="text-sm text-gray-600 mb-1">• ${example}</div>`
+            ).join('');
+        }
+        
+        // 添加技术特征
+        function addFeature(type) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim) return;
+            
+            if (!claim.features) claim.features = { necessary: [], distinctive: [] };
+            if (!claim.features[type]) claim.features[type] = [];
+            
+            const newFeature = {
+                name: '新技术特征',
+                examples: []
+            };
+            
+            claim.features[type].push(newFeature);
+            renderFeatures(claim.features);
+            addOperationHistoryItem(`添加了${type === 'necessary' ? '必要' : '区别'}技术特征`);
+        }
+        
+        // 删除技术特征
+        function removeFeature(index, type) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.features || !claim.features[type]) return;
+            
+            if (confirm('确定要删除这个技术特征吗？')) {
+                claim.features[type].splice(index, 1);
+                renderFeatures(claim.features);
+                addOperationHistoryItem(`删除了${type === 'necessary' ? '必要' : '区别'}技术特征`);
+            }
+        }
+        
+        // 渲染有益效果
+        function renderBenefits(benefits) {
+            const container = document.getElementById('benefits-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (benefits.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-sm py-2">暂无有益效果</div>';
+                return;
+            }
+            
+            benefits.forEach((benefit, index) => {
+                const benefitElement = createBenefitElement(benefit, index);
+                container.appendChild(benefitElement);
+            });
+        }
+        
+        // 创建有益效果元素
+        function createBenefitElement(benefit, index) {
+            const div = document.createElement('div');
+            div.className = 'benefit-item p-3 border border-gray-200 rounded-lg bg-green-50';
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-grip-vertical draggable-handle text-gray-400"></i>
+                        <span class="text-gray-800">${benefit}</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="editBenefit(${index})" class="p-1 text-green-600 hover:text-green-800" title="编辑">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button onclick="removeBenefit(${index})" class="p-1 text-red-600 hover:text-red-800" title="删除">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 添加有益效果
+        function addBenefit() {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim) return;
+            
+            if (!claim.benefits) claim.benefits = [];
+            
+            const newBenefit = '新有益效果';
+            claim.benefits.push(newBenefit);
+            renderBenefits(claim.benefits);
+            addOperationHistoryItem('添加了有益效果');
+        }
+        
+        // 删除有益效果
+        function removeBenefit(index) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.benefits) return;
+            
+            if (confirm('确定要删除这个有益效果吗？')) {
+                claim.benefits.splice(index, 1);
+                renderBenefits(claim.benefits);
+                addOperationHistoryItem('删除了有益效果');
+            }
+        }
+        
+        // 渲染技术特征库
+        function renderFeatureLibrary() {
+            const container = document.getElementById('feature-library');
+            if (!container) return;
+            
+            // 从本地加载技术特征库
+            const featureLibrary = JSON.parse(localStorage.getItem('comparisonResults')).features || [];
+
+            container.innerHTML = '';
+            
+            if (featureLibrary.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4"><i class="fas fa-plus-circle text-xl mb-2"></i><p class="text-sm">点击上方按钮添加特征</p></div>';
+                return;
+            }
+            
+            featureLibrary.forEach((feature, index) => {
+                const featureElement = createLibraryFeatureElement(feature, index);
+                container.appendChild(featureElement);
+            });
+        }
+        
+        // 创建库中技术特征元素
+        function createLibraryFeatureElement(feature, index) {
+            const div = document.createElement('div');
+            div.className = 'library-feature-item p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors mb-2';
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-800">${feature.edited}</span>
+                        ${feature.isDistinctive ? '<span class="px-1 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">区别</span>' : ''}
+                    </div>
+                    <button onclick="removeFromFeatureLibrary(${index})" class="p-1 text-red-600 hover:text-red-800" title="删除">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 渲染有益效果库
+        function renderBenefitLibrary() {
+            const container = document.getElementById('benefit-library');
+            if (!container) return;
+
+            const featureLibrary = JSON.parse(localStorage.getItem('comparisonResults')).effects || [];
+            
+            container.innerHTML = '';
+            
+            if (benefitLibrary.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4"><i class="fas fa-plus-circle text-xl mb-2"></i><p class="text-sm">点击上方按钮添加效果</p></div>';
+                return;
+            }
+            
+            benefitLibrary.forEach((benefit, index) => {
+                const benefitElement = createLibraryBenefitElement(benefit, index);
+                container.appendChild(benefitElement);
+            });
+        }
+        
+        // 创建库中有益效果元素
+        function createLibraryBenefitElement(benefit, index) {
+            const div = document.createElement('div');
+            div.className = 'library-benefit-item p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors mb-2';
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-800">${benefit.edited}</span>
+                    <button onclick="removeFromBenefitLibrary(${index})" class="p-1 text-red-600 hover:text-red-800" title="删除">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        // 添加特征到库
+        function addFeatureToLibrary() {
+            const name = prompt('请输入技术特征名称：');
+            if (!name || !name.trim()) return;
+            
+            const isDistinctive = confirm('这是区别技术特征吗？');
+            
+            const newFeature = {
+                id: nextFeatureId++,
+                name: name.trim(),
+                isDistinctive: isDistinctive
+            };
+            
+            featureLibrary.push(newFeature);
+            renderFeatureLibrary();
+            addOperationHistoryItem('添加了技术特征到库');
+        }
+        
+        // 添加效果到库
+        function addBenefitToLibrary() {
+            const content = prompt('请输入有益效果内容：');
+            if (!content || !content.trim()) return;
+            
+            const newBenefit = {
+                id: nextBenefitId++,
+                content: content.trim()
+            };
+            
+            benefitLibrary.push(newBenefit);
+            renderBenefitLibrary();
+            addOperationHistoryItem('添加了有益效果到库');
+        }
+        
+        // 从特征库删除
+        function removeFromFeatureLibrary(index) {
+            if (confirm('确定要从库中删除这个技术特征吗？')) {
+                featureLibrary.splice(index, 1);
+                renderFeatureLibrary();
+                addOperationHistoryItem('从库中删除了技术特征');
+            }
+        }
+        
+        // 从效果库删除
+        function removeFromBenefitLibrary(index) {
+            if (confirm('确定要从库中删除这个有益效果吗？')) {
+                benefitLibrary.splice(index, 1);
+                renderBenefitLibrary();
+                addOperationHistoryItem('从库中删除了有益效果');
+            }
+        }
+        
+        // 显示特征库选择
+        function showFeatureLibrary(type) {
+            const modal = document.getElementById('feature-selection-modal');
+            if (!modal) return;
+            
+            modal.classList.remove('hidden');
+            modal.dataset.featureType = type;
+            
+            // 渲染特征选择列表
+            renderFeatureSelectionList();
+        }
+        
+        // 渲染特征选择列表
+        function renderFeatureSelectionList() {
+            const container = document.getElementById('feature-selection-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            featureLibrary.forEach((feature, index) => {
+                const div = document.createElement('div');
+                div.className = 'feature-selection-item p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors';
+                
+                div.innerHTML = `
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" value="${index}" class="feature-checkbox">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-medium text-gray-800">${feature.name}</span>
+                                ${feature.isDistinctive ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">区别</span>' : ''}
+                            </div>
+                        </div>
+                    </label>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        // 显示效果库选择
+        function showBenefitLibrary() {
+            const modal = document.getElementById('benefit-selection-modal');
+            if (!modal) return;
+            
+            modal.classList.remove('hidden');
+            
+            // 渲染效果选择列表
+            renderBenefitSelectionList();
+        }
+        
+        // 渲染效果选择列表
+        function renderBenefitSelectionList() {
+            const container = document.getElementById('benefit-selection-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            benefitLibrary.forEach((benefit, index) => {
+                const div = document.createElement('div');
+                div.className = 'benefit-selection-item p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors';
+                
+                div.innerHTML = `
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" value="${index}" class="benefit-checkbox">
+                        <span class="text-gray-800">${benefit.content}</span>
+                    </label>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        // 关闭模态框
+        function closeFeatureModal() {
+            const modal = document.getElementById('feature-selection-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        
+        function closeBenefitModal() {
+            const modal = document.getElementById('benefit-selection-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        
+        function closeExampleModal() {
+            const modal = document.getElementById('example-management-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        
+        function closeGenerateModal() {
+            const modal = document.getElementById('generate-claims-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+        
+        // 隐藏所有编辑器
+        function hideAllEditors() {
+            const editors = ['default-editor', 'protection-object-editor', 'claim-editor'];
+            editors.forEach(editorId => {
+                const editor = document.getElementById(editorId);
+                if (editor) editor.classList.add('hidden');
+            });
+        }
+        
+        // 显示默认编辑器
+        function showDefaultEditor() {
+            hideAllEditors();
+            const defaultEditor = document.getElementById('default-editor');
+            if (defaultEditor) defaultEditor.classList.remove('hidden');
+            updateEditorTitle('请选择保护客体或权利要求');
+            currentSelection = null;
+        }
+        
+        // 更新编辑器标题
+        function updateEditorTitle(title) {
+            const titleElement = document.getElementById('editor-title');
+            if (titleElement) titleElement.textContent = title;
+        }
+        
+        // 取消配置
+        function cancelConfig() {
+            showDefaultEditor();
+        }
+        
+        // 添加操作历史
+        function addOperationHistoryItem(operation) {
+            const timestamp = new Date().toLocaleTimeString();
+            operationHistory.unshift({ operation, timestamp });
+            
+            // 限制历史记录数量
+            if (operationHistory.length > 50) {
+                operationHistory = operationHistory.slice(0, 50);
+            }
+            
+            renderOperationHistory();
+        }
+        
+        // 渲染操作历史
+        function renderOperationHistory() {
+            const container = document.getElementById('operation-history');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (operationHistory.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4"><p class="text-sm">暂无操作历史</p></div>';
+                return;
+            }
+            
+            operationHistory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item p-2 border-b border-gray-100 last:border-b-0';
+                
+                div.innerHTML = `
+                    <div class="text-sm text-gray-800">${item.operation}</div>
+                    <div class="text-xs text-gray-500 mt-1">${item.timestamp}</div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        // 撤销操作
+        function undo() {
+            // 这里可以实现撤销逻辑
+            showNotification('撤销功能待实现', 'info');
+        }
+        
+        // 重做操作
+        function redo() {
+            // 这里可以实现重做逻辑
+            showNotification('重做功能待实现', 'info');
+        }
+        
+        // 生成权利要求书
+        function generateClaimsDocument() {
+            const modal = document.getElementById('generate-claims-modal');
+            if (!modal) return;
+            
+            modal.classList.remove('hidden');
+            
+            // 生成预览
+            generateClaimsPreview();
+        }
+        
+        // 生成权利要求书预览
+        function generateClaimsPreview() {
+            const preview = document.getElementById('preview-claims');
+            if (!preview) return;
+            
+            let claimsText = '权利要求书\n\n';
+            let globalNumber = 1;
+            
+            for (const [poId, po] of Object.entries(protectionObjects)) {
+                if (!po.claims || Object.keys(po.claims).length === 0) continue;
+                
+                const sortedClaims = Object.entries(po.claims).sort(([a], [b]) => parseInt(a) - parseInt(b));
+                
+                for (const [claimId, claim] of sortedClaims) {
+                    claimsText += `${globalNumber}. ${claim.content || '权利要求内容待完善'}\n\n`;
+                    globalNumber++;
+                }
+            }
+            
+            if (globalNumber === 1) {
+                claimsText = '暂无权利要求内容，请先添加保护客体和权利要求。';
+            }
+            
+            preview.textContent = claimsText;
+        }
+        
+        // 自动生成权利要求内容
+        function generateClaimContent() {
+            showNotification('自动生成功能待实现', 'info');
+        }
+        
+        // 搜索功能
+        function searchTree(event) {
+            const query = event.target.value.toLowerCase();
+            // 实现搜索逻辑
+        }
+        
+        function searchFeatures(event) {
+            const query = event.target.value.toLowerCase();
+            // 实现搜索逻辑
+        }
+        
+        function searchBenefits(event) {
+            const query = event.target.value.toLowerCase();
+            // 实现搜索逻辑
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300`;
+            
+            switch (type) {
+                case 'success':
+                    notification.classList.add('bg-green-500');
+                    break;
+                case 'error':
+                    notification.classList.add('bg-red-500');
+                    break;
+                case 'warning':
+                    notification.classList.add('bg-yellow-500');
+                    break;
+                default:
+                    notification.classList.add('bg-blue-500');
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    
+        // 编辑技术特征
+        function editFeature(index, type) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.features || !claim.features[type]) return;
+            
+            const feature = claim.features[type][index];
+            if (!feature) return;
+            
+            const newName = prompt('请输入技术特征名称：', feature.name || '');
+            if (newName !== null && newName.trim()) {
+                feature.name = newName.trim();
+                renderFeatures(claim.features);
+                addOperationHistoryItem(`编辑了${type === 'necessary' ? '必要' : '区别'}技术特征`);
+            }
+        }
+
+        // 编辑有益效果
+        function editBenefit(index) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.benefits) return;
+            
+            const benefit = claim.benefits[index];
+            if (!benefit) return;
+            
+            const newContent = prompt('请输入有益效果内容：', benefit);
+            if (newContent !== null && newContent.trim()) {
+                claim.benefits[index] = newContent.trim();
+                renderBenefits(claim.benefits);
+                addOperationHistoryItem('编辑了有益效果');
+            }
+        }
+
+        // 添加选中的特征到权利要求
+        function addSelectedFeatures() {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const modal = document.getElementById('feature-selection-modal');
+            if (!modal) return;
+            
+            const featureType = modal.dataset.featureType || 'necessary';
+            const checkboxes = modal.querySelectorAll('.feature-checkbox:checked');
+            
+            if (checkboxes.length === 0) {
+                showNotification('请选择至少一个技术特征', 'warning');
+                return;
+            }
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim) return;
+            
+            if (!claim.features) claim.features = { necessary: [], distinctive: [] };
+            if (!claim.features[featureType]) claim.features[featureType] = [];
+            
+            checkboxes.forEach(checkbox => {
+                const index = parseInt(checkbox.value);
+                const libraryFeature = featureLibrary[index];
+                if (libraryFeature) {
+                    const newFeature = {
+                        name: libraryFeature.name,
+                        examples: libraryFeature.examples ? [...libraryFeature.examples] : []
+                    };
+                    claim.features[featureType].push(newFeature);
+                }
+            });
+            
+            renderFeatures(claim.features);
+            closeFeatureModal();
+            addOperationHistoryItem(`添加了${checkboxes.length}个${featureType === 'necessary' ? '必要' : '区别'}技术特征`);
+            showNotification('技术特征添加成功', 'success');
+        }
+
+        // 添加选中的效果到权利要求
+        function addSelectedBenefits() {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const modal = document.getElementById('benefit-selection-modal');
+            if (!modal) return;
+            
+            const checkboxes = modal.querySelectorAll('.benefit-checkbox:checked');
+            
+            if (checkboxes.length === 0) {
+                showNotification('请选择至少一个有益效果', 'warning');
+                return;
+            }
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim) return;
+            
+            if (!claim.benefits) claim.benefits = [];
+            
+            checkboxes.forEach(checkbox => {
+                const index = parseInt(checkbox.value);
+                const libraryBenefit = benefitLibrary[index];
+                if (libraryBenefit) {
+                    claim.benefits.push(libraryBenefit.content);
+                }
+            });
+            
+            renderBenefits(claim.benefits);
+            closeBenefitModal();
+            addOperationHistoryItem(`添加了${checkboxes.length}个有益效果`);
+            showNotification('有益效果添加成功', 'success');
+        }
+
+        // 初始化拖拽排序功能
+        function initializeSortable() {
+            // 保护客体列表排序
+            const protectionObjectsList = document.getElementById('protection-objects-list');
+            if (protectionObjectsList) {
+                new Sortable(protectionObjectsList, {
+                    group: 'protection-objects',
+                    animation: 150,
+                    handle: '.draggable-handle',
+                    onEnd: function(evt) {
+                        const oldIndex = evt.oldIndex;
+                        const newIndex = evt.newIndex;
+                        
+                        if (oldIndex !== newIndex) {
+                            // 重新排序保护客体
+                            const poIds = Object.keys(protectionObjects);
+                            const movedPoId = poIds[oldIndex];
+                            poIds.splice(oldIndex, 1);
+                            poIds.splice(newIndex, 0, movedPoId);
+                            
+                            // 重建保护客体对象
+                            const newProtectionObjects = {};
+                            poIds.forEach(poId => {
+                                newProtectionObjects[poId] = protectionObjects[poId];
+                            });
+                            protectionObjects = newProtectionObjects;
+                            
+                            renderProtectionObjectsList();
+                            addOperationHistoryItem('调整了保护客体顺序');
+                        }
+                    }
+                });
+            }
+            
+            // 权利要求列表排序
+            document.addEventListener('DOMContentLoaded', function() {
+                const claimsLists = document.querySelectorAll('.claims-list');
+                claimsLists.forEach(claimsList => {
+                    new Sortable(claimsList, {
+                        group: 'claims',
+                        animation: 150,
+                        handle: '.draggable-handle',
+                        onEnd: function(evt) {
+                            const poId = evt.to.closest('.protection-object').dataset.poId;
+                            const oldIndex = evt.oldIndex;
+                            const newIndex = evt.newIndex;
+                            
+                            if (oldIndex !== newIndex && protectionObjects[poId] && protectionObjects[poId].claims) {
+                                const claimIds = Object.keys(protectionObjects[poId].claims);
+                                const movedClaimId = claimIds[oldIndex];
+                                claimIds.splice(oldIndex, 1);
+                                claimIds.splice(newIndex, 0, movedClaimId);
+                                
+                                // 重建权利要求对象
+                                const newClaims = {};
+                                claimIds.forEach(claimId => {
+                                    newClaims[claimId] = protectionObjects[poId].claims[claimId];
+                                });
+                                protectionObjects[poId].claims = newClaims;
+                                
+                                renderProtectionObjectsList();
+                                addOperationHistoryItem('调整了权利要求顺序');
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // 技术特征排序
+            document.addEventListener('DOMContentLoaded', function() {
+                const featureLists = document.querySelectorAll('#necessary-features, #distinctive-features');
+                featureLists.forEach(featureList => {
+                    new Sortable(featureList, {
+                        group: 'features',
+                        animation: 150,
+                        handle: '.draggable-handle',
+                        onEnd: function(evt) {
+                            const isDistinctive = evt.to.id === 'distinctive-features';
+                            const featureType = isDistinctive ? 'distinctive' : 'necessary';
+                            const oldIndex = evt.oldIndex;
+                            const newIndex = evt.newIndex;
+                            
+                            if (oldIndex !== newIndex && currentSelection && currentSelection.type === 'claim') {
+                                const poId = currentSelection.poId;
+                                const claimId = currentSelection.claimId;
+                                const claim = protectionObjects[poId]?.claims?.[claimId];
+                                
+                                if (claim && claim.features && claim.features[featureType]) {
+                                    const features = claim.features[featureType];
+                                    const movedFeature = features.splice(oldIndex, 1)[0];
+                                    features.splice(newIndex, 0, movedFeature);
+                                    
+                                    renderFeatures(claim.features);
+                                    addOperationHistoryItem('调整了技术特征顺序');
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // 有益效果排序
+            document.addEventListener('DOMContentLoaded', function() {
+                const benefitsList = document.getElementById('benefits-list');
+                if (benefitsList) {
+                    new Sortable(benefitsList, {
+                        group: 'benefits',
+                        animation: 150,
+                        handle: '.draggable-handle',
+                        onEnd: function(evt) {
+                            const oldIndex = evt.oldIndex;
+                            const newIndex = evt.newIndex;
+                            
+                            if (oldIndex !== newIndex && currentSelection && currentSelection.type === 'claim') {
+                                const poId = currentSelection.poId;
+                                const claimId = currentSelection.claimId;
+                                const claim = protectionObjects[poId]?.claims?.[claimId];
+                                
+                                if (claim && claim.benefits) {
+                                    const movedBenefit = claim.benefits.splice(oldIndex, 1)[0];
+                                    claim.benefits.splice(newIndex, 0, movedBenefit);
+                                    
+                                    renderBenefits(claim.benefits);
+                                    addOperationHistoryItem('调整了有益效果顺序');
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // 添加实施例
+        function addExample(featureIndex, featureType) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.features || !claim.features[featureType]) return;
+            
+            const feature = claim.features[featureType][featureIndex];
+            if (!feature) return;
+            
+            const exampleContent = prompt('请输入实施例内容：');
+            if (exampleContent && exampleContent.trim()) {
+                if (!feature.examples) feature.examples = [];
+                feature.examples.push(exampleContent.trim());
+                renderFeatures(claim.features);
+                addOperationHistoryItem('添加了实施例');
+                showNotification('实施例添加成功', 'success');
+            }
+        }
+
+        // 编辑实施例
+        function editExample(featureIndex, featureType, exampleIndex) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.features || !claim.features[featureType]) return;
+            
+            const feature = claim.features[featureType][featureIndex];
+            if (!feature || !feature.examples || !feature.examples[exampleIndex]) return;
+            
+            const currentExample = feature.examples[exampleIndex];
+            const newContent = prompt('请编辑实施例内容：', currentExample);
+            if (newContent !== null && newContent.trim()) {
+                feature.examples[exampleIndex] = newContent.trim();
+                renderFeatures(claim.features);
+                addOperationHistoryItem('编辑了实施例');
+                showNotification('实施例编辑成功', 'success');
+            }
+        }
+
+        // 删除实施例
+        function removeExample(featureIndex, featureType, exampleIndex) {
+            if (!currentSelection || currentSelection.type !== 'claim') return;
+            
+            const poId = currentSelection.poId;
+            const claimId = currentSelection.claimId;
+            const po = protectionObjects[poId];
+            const claim = po && po.claims ? po.claims[claimId] : null;
+            if (!claim || !claim.features || !claim.features[featureType]) return;
+            
+            const feature = claim.features[featureType][featureIndex];
+            if (!feature || !feature.examples || !feature.examples[exampleIndex]) return;
+            
+            if (confirm('确定要删除这个实施例吗？')) {
+                feature.examples.splice(exampleIndex, 1);
+                renderFeatures(claim.features);
+                addOperationHistoryItem('删除了实施例');
+                showNotification('实施例删除成功', 'success');
+            }
+        }
+
+        // 切换实施例显示/隐藏
+        function toggleExamples(featureIndex, featureType) {
+            const examplesContainer = document.querySelector(`#${featureType}-features .feature-item:nth-child(${featureIndex + 1}) .examples-container`);
+            if (examplesContainer) {
+                examplesContainer.classList.toggle('hidden');
+            }
+        }
+
+        // 更新createFeatureElement函数以包含实施例管理
+        function createFeatureElement(feature, index, isDistinctive) {
+            const featureType = isDistinctive ? 'distinctive' : 'necessary';
+            const div = document.createElement('div');
+            div.className = 'feature-item p-3 border border-gray-200 rounded-lg bg-gray-50';
+            
+            const examplesHtml = feature.examples && feature.examples.length > 0 ? 
+                feature.examples.map((example, exampleIndex) => `
+                    <div class="example-item flex items-center justify-between py-1 px-2 bg-white rounded text-sm">
+                        <span class="text-gray-600">• ${example}</span>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="editExample(${index}, '${featureType}', ${exampleIndex})" class="p-1 text-blue-600 hover:text-blue-800" title="编辑实施例">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="removeExample(${index}, '${featureType}', ${exampleIndex})" class="p-1 text-red-600 hover:text-red-800" title="删除实施例">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('') : '<div class="text-gray-400 text-xs py-1">暂无实施例</div>';
+            
+            div.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-grip-vertical draggable-handle text-gray-400 cursor-move"></i>
+                        <span class="font-medium text-gray-800">${feature.name || '未命名特征'}</span>
+                        ${isDistinctive ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">区别</span>' : ''}
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="addExample(${index}, '${featureType}')" class="p-1 text-green-600 hover:text-green-800" title="添加实施例">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                        <button onclick="editFeature(${index}, '${featureType}')" class="p-1 text-blue-600 hover:text-blue-800" title="编辑特征">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button onclick="removeFeature(${index}, '${featureType}')" class="p-1 text-red-600 hover:text-red-800" title="删除特征">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                        <button onclick="toggleExamples(${index}, '${featureType}')" class="p-1 text-gray-600 hover:text-gray-800" title="切换实施例显示">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="examples-container space-y-1">
+                    ${examplesHtml}
+                </div>
+            `;
+            
+            return div;
+        }
+    </script>
+</body>
+</html>

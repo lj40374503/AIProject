@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术交底书辅助撰写系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-black">
+    <!-- 住面板-->
+    <div class="flex h-screen overflow-hidden">
+        <!-- 左侧边栏 -->
+        <div class="w-96 bg-gradient-to-b from-white to-gray-50 shadow-lg flex flex-col h-full border-r border-gray-200">
+            <!-- 顶部标题区域 -->
+            <div class="p-6 border-b border-gray-100 bg-white">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                        <i class="ri-file-list-3-line text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">交底书档案</h2>
+                    </div>
+                </div>
+
+                <!-- 搜索框 - 改进设计 -->
+                <div class="relative">
+                    <input type="text" placeholder="搜索交底书..." 
+                           class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                  focus:bg-white transition-all duration-200">
+                    <i class="ri-search-line absolute left-3 top-3.5 text-gray-400 text-sm"></i>
+                    <button class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="ri-filter-3-line text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 历史交底书列表 -->
+            <div class="flex-1 overflow-y-auto px-6">
+                <div class="space-y-3 max-w-6xl">
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-blue-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible">
+                        <div class="p-4">
+                            <!-- 第一行：标题和操作按钮 -->
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-700 
+                                           transition-colors flex-1 mr-2">智能语音识别系统</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <!-- 下拉菜单 -->
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                    flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-search-line mr-2"></i>查新检索
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 第二行：时间、分享人和状态 -->
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-calendar-line mr-1"></i>
+                                        2023-11-15
+                                    </span>
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-user-line mr-1"></i>
+                                        张三
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-green-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible">
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-green-700 
+                                           transition-colors flex-1 mr-2">一种图像处理方法</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                    flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-search-line mr-2"></i>查新检索
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-calendar-line mr-1"></i>
+                                        2023-10-28
+                                    </span>
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-user-line mr-1"></i>
+                                        李四
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-purple-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible">
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-purple-700 
+                                           transition-colors flex-1 mr-2">高效能电池管理系统</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                    flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-search-line mr-2"></i>查新检索
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-calendar-line mr-1"></i>
+                                        2023-09-15
+                                    </span>
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-user-line mr-1"></i>
+                                        王五
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-orange-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible">
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-orange-700 
+                                           transition-colors flex-1 mr-2">一种数据加密方法</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                    flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-search-line mr-2"></i>查新检索
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-calendar-line mr-1"></i>
+                                        2023-08-22
+                                    </span>
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-user-line mr-1"></i>
+                                        赵六
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-indigo-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible">
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-indigo-700 
+                                           transition-colors flex-1 mr-2">智能物联网控制系统</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                    flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-search-line mr-2"></i>查新检索
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-3">
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-calendar-line mr-1"></i>
+                                        2023-08-10
+                                    </span>
+                                    <span class="flex items-center text-gray-500">
+                                        <i class="ri-user-line mr-1"></i>
+                                        孙七
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 加载更多按钮 -->
+                <div class="mt-4 text-center">
+                    <button class="px-4 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 
+                                   rounded-lg transition-colors flex items-center justify-center mx-auto">
+                        <i class="ri-refresh-line mr-2"></i>
+                        加载更多
+                    </button>
+                </div>
+            </div>
+
+            <!-- 底部统计信息 -->
+            <!-- <div class="px-6 py-4 bg-white border-t border-gray-200">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <button class="hover:bg-blue-50">
+                        <div class="text-lg font-semibold text-blue-600">12</div>
+                        <div class="text-xs text-gray-500">总交底书</div>
+                    </button>
+                    <button class="hover:bg-blue-50">
+                        <div class="text-lg font-semibold text-green-600">8</div>
+                        <div class="text-xs text-gray-500">我创建的</div>
+                    </button>
+                    <button class="hover:bg-blue-50">
+                        <div class="text-lg font-semibold text-yellow-600">4</div>
+                        <div class="text-xs text-gray-500">他人分享的</div>
+                    </button>
+                </div>
+            </div> -->
+        </div>
+        
+        <!-- 右侧内容区 -->
+        <div class="flex-1 overflow-y-auto bg-gray-50">
+            <!-- 交底书查看页面 -->
+            <div id="viewSection">            
+                <div class="p-3">
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-medium">本发明的名称</h2>
+                            <!-- <div class="flex space-x-2">
+                                <button id="searchBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 flex items-center">
+                                    <i class="ri-search-line mr-2"></i>查新检索
+                                </button>
+                                <button id="downloadBtn" class="p-2 rounded-lg hover:bg-gray-100 transition duration-200">
+                                    <i class="ri-download-line text-gray-600"></i>
+                                </button>
+                                <button id="deleteBtn" class="p-2 rounded-lg hover:bg-gray-100 transition duration-200">
+                                    <i class="ri-delete-bin-line text-gray-600"></i>
+                                </button>
+                            </div> -->
+                        </div>
+                        <p class="text-gray-700">一种基于深度学习的智能语音识别系统</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-lg font-medium mb-3">本发明解决的技术问题</h2>
+                        <p class="text-gray-700">现有的语音识别系统在嘈杂环境下识别准确率低，对方言和口音的适应性差，处理速度慢，且难以识别专业领域的术语。这些问题严重影响了语音识别技术在实际应用中的效果和用户体验。本发明旨在解决上述问题，提高语音识别的准确率、速度和适应性。</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-lg font-medium mb-3">解决该技术问题的技术方案</h2>
+                        <p class="text-gray-700">本发明提出了一种基于深度学习的智能语音识别系统，该系统包括：<br><br>
+                        1. 多通道语音采集模块：采用多麦克风阵列采集声音，并进行初步的噪声消除；<br>
+                        2. 声学特征提取模块：使用改进的梅尔频率倒谱系数(MFCC)和小波变换提取声学特征；<br>
+                        3. 深度神经网络模型：采用结合卷积神经网络(CNN)和长短期记忆网络(LSTM)的混合模型进行声学建模；<br>
+                        4. 语言模型：使用基于Transformer的预训练语言模型，提高对上下文的理解能力；<br>
+                        5. 自适应学习模块：通过迁移学习和增量学习技术，实现对不同口音和专业领域的快速适应；<br>
+                        6. 后处理优化模块：结合语义分析和专业词库，对识别结果进行优化和纠错。</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-lg font-medium mb-3">本发明达到的技术效果</h2>
+                        <p class="text-gray-700">通过采用本发明的技术方案，可以达到以下技术效果：<br><br>
+                        1. 在信噪比为5dB的嘈杂环境下，识别准确率提高了15%以上；<br>
+                        2. 对于方言和口音的识别准确率提高了20%，适应新口音的训练时间缩短了60%；<br>
+                        3. 识别处理速度提高了30%，可以实现近实时的语音识别；<br>
+                        4. 对专业领域术语的识别准确率提高了25%；<br>
+                        5. 系统资源占用减少了40%，可以在资源受限的设备上运行。</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <h2 class="text-lg font-medium mb-3">本发明技术方案对应的实施例</h2>
+                        <p class="text-gray-700">实施例1：基于云端部署的智能语音识别系统<br><br>
+                        本实施例中，系统主要部署在云服务器上，客户端负责语音采集和简单预处理。具体实现步骤如下：<br><br>
+                        1. 客户端通过多麦克风阵列采集用户语音，采样率为16kHz，采用波束形成技术进行初步降噪；<br>
+                        2. 预处理后的音频数据通过网络传输到云服务器；<br>
+                        3. 云服务器使用改进的MFCC算法提取声学特征，窗口大小为25ms，步长为10ms；<br>
+                        4. 提取的特征输入到CNN-LSTM混合模型中，CNN部分包含3个卷积层，每层分别使用64、128、256个3×3卷积核，LSTM部分包含2层双向LSTM，每层512个神经元；<br>
+                        5. 声学模型的输出结果与基于Transformer的语言模型结合，语言模型包含12层Transformer编码器，隐藏层维度为768；<br>
+                        6. 对识别结果进行后处理，包括标点符号预测、专业术语识别和上下文纠错；<br>
+                        7. 最终结果返回给客户端展示，同时系统记录用户反馈，用于模型的持续优化。<br><br>
+                        
+                        实施例2：面向医疗领域的边缘计算语音识别系统<br><br>
+                        本实施例针对医疗场景，系统部署在边缘计算设备上，减少网络依赖。具体实现如下：<br><br>
+                        1. 使用定向麦克风采集医生的语音，同时记录环境噪声用于自适应降噪；<br>
+                        2. 在边缘设备上使用小波变换提取声学特征，以更好地捕捉医疗术语的声学特点；<br>
+                        3. 采用轻量化的CNN-GRU模型进行声学建模，模型参数量减少50%；<br>
+                        4. 集成专门针对医疗领域训练的小型语言模型，包含医学术语词库；<br>
+                        5. 使用知识蒸馏技术，将大模型的能力迁移到小模型中；<br>
+                        6. 系统支持离线工作，定期与云端同步更新模型。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 删除确认对话框 -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-medium mb-4">确认删除</h3>
+            <p class="text-gray-600 mb-6">您确定要删除这份技术交底书吗？此操作无法撤销。</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeDeleteModal()" class="py-2 px-4 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition duration-200">
+                    取消
+                </button>
+                <button onclick="confirmDelete()" class="py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition duration-200">
+                    确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // 切换下拉菜单显示/隐藏
+    function toggleDropdown(button) {
+        const dropdown = button.nextElementSibling;
+        const allDropdowns = document.querySelectorAll('.absolute.right-0.top-full');
+        
+        // 关闭其他所有下拉菜单
+        allDropdowns.forEach(menu => {
+            if (menu !== dropdown) {
+                menu.classList.add('hidden');
+            }
+        });
+        
+        // 切换当前下拉菜单
+        dropdown.classList.toggle('hidden');
+    }
+
+    // 点击页面其他地方关闭下拉菜单
+    document.addEventListener('click', function(event) {
+        const dropdowns = document.querySelectorAll('.absolute.right-0.top-full');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.closest('.relative').contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    });
+
+    // 下载文件功能
+    function downloadFile() {
+        // 这里可以添加实际的下载逻辑
+        console.log('下载文件');
+        // 示例：创建下载链接
+        // const link = document.createElement('a');
+        // link.href = 'path/to/file';
+        // link.download = 'filename';
+        // link.click();
+        
+        // 显示提示信息
+        showNotification('文件下载已开始', 'success');
+    }
+
+    // 转换为申请书功能
+    function transformFile() {
+        console.log('转换为申请书');
+        // 这里可以添加跳转到申请书编辑页面的逻辑
+        window.open('../shenqingshu/editor.html?step=2', '_blank');
+        
+        //showNotification('正在转换为申请书...', 'info');
+    }
+
+    // 查新功能
+    function shareFile() {
+        window.open('chaxin.html', '_blank');
+        // 这里可以添加分享逻辑，比如生成分享链接
+        
+    }
+
+    // 删除文件功能
+    function deleteFile() {
+        console.log('删除文件');
+        
+        // 显示确认对话框
+        if (confirm('确定要删除这个交底书吗？此操作不可撤销。')) {
+            // 这里添加实际的删除逻辑
+            showNotification('文件已删除', 'success');
+            
+            // 可以添加从列表中移除元素的逻辑
+            // event.target.closest('.group').remove();
+        }
+    }
+
+    // 查新检索功能
+    function performNoveltySearch() {
+        console.log('执行查新检索');
+        // 跳转到查新页面
+        window.location.href = 'chaxin.html';
+    }
+
+    // 搜索功能
+    function searchDisclosures() {
+        const searchInput = document.querySelector('input[placeholder="搜索交底书..."]');
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const disclosureItems = document.querySelectorAll('.group');
+        
+        disclosureItems.forEach(item => {
+            const title = item.querySelector('h3').textContent.toLowerCase();
+            const sharer = item.querySelector('.ri-user-line').parentElement.textContent.toLowerCase();
+            
+            if (title.includes(searchTerm) || sharer.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = searchTerm === '' ? 'block' : 'none';
+            }
+        });
+    }
+
+    // 加载更多功能
+    function loadMore() {
+        console.log('加载更多交底书');
+        
+        // 这里可以添加AJAX请求获取更多数据的逻辑
+        // 示例：模拟加载
+        showNotification('正在加载更多...', 'info');
+        
+        setTimeout(() => {
+            showNotification('已加载更多交底书', 'success');
+        }, 1000);
+    }
+
+    // 通知提示功能
+    function showNotification(message, type = 'info') {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full`;
+        
+        // 根据类型设置样式
+        switch(type) {
+            case 'success':
+                notification.className += ' bg-green-500 text-white';
+                break;
+            case 'error':
+                notification.className += ' bg-red-500 text-white';
+                break;
+            case 'warning':
+                notification.className += ' bg-yellow-500 text-white';
+                break;
+            default:
+                notification.className += ' bg-blue-500 text-white';
+        }
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // 显示动画
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
+    // 页面加载完成后的初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 绑定搜索框事件
+        const searchInput = document.querySelector('input[placeholder="搜索交底书..."]');
+        if (searchInput) {
+            searchInput.addEventListener('input', searchDisclosures);
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchDisclosures();
+                }
+            });
+        }
+        
+        // 绑定加载更多按钮事件
+        const loadMoreBtn = document.querySelector('.load-more-btn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', loadMore);
+        }
+        
+        // 绑定查新检索按钮事件
+        const noveltySearchBtn = document.querySelector('.novelty-search-btn');
+        if (noveltySearchBtn) {
+            noveltySearchBtn.addEventListener('click', performNoveltySearch);
+        }
+        
+        // 为交底书项目添加点击事件
+        const disclosureItems = document.querySelectorAll('.group');
+        disclosureItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                // 如果点击的不是下拉菜单按钮，则跳转到详情页
+                if (!e.target.closest('.relative button')) {
+                    console.log('跳转到交底书详情页');
+                    // window.location.href = 'detail.html';
+                }
+            });
+        });
+        
+        console.log('交底书档案页面初始化完成');
+    });
+
+    // 键盘快捷键支持
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+F 聚焦搜索框
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[placeholder="搜索交底书..."]');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+        
+        // ESC 关闭所有下拉菜单
+        if (e.key === 'Escape') {
+            const dropdowns = document.querySelectorAll('.absolute.right-0.top-full');
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.add('hidden');
+            });
+        }
+    });
+
+    // 拖拽上传支持（如果需要）
+    function initDragAndDrop() {
+        const uploadArea = document.querySelector('.upload-area');
+        if (!uploadArea) return;
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('border-blue-500', 'bg-blue-50');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+    }
+
+    // 文件上传处理
+    function handleFileUpload(file) {
+        console.log('上传文件:', file.name);
+        showNotification(`正在上传文件: ${file.name}`, 'info');
+        
+        // 这里添加实际的文件上传逻辑
+        // 模拟上传进度
+        setTimeout(() => {
+            showNotification('文件上传成功', 'success');
+        }, 2000);
+    }
+
+    
+</script>
+    
+</body>
+</html>

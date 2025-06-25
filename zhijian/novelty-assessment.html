@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI专利新创性评估系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .stage-indicator {
+            transition: all 0.3s ease;
+        }
+        .stage-active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        .stage-completed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .feature-tree {
+            position: relative;
+        }
+        .feature-connection {
+            position: absolute;
+            border: 2px dashed #d1d5db;
+            z-index: 1;
+        }
+        .diff-highlight {
+            background: linear-gradient(120deg, #fef3c7 0%, #fbbf24 100%);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .new-feature {
+            background: linear-gradient(120deg, #dcfce7 0%, #22c55e 100%);
+            border: 2px solid #16a34a;
+        }
+        .modified-feature {
+            background: linear-gradient(120deg, #fef3c7 0%, #f59e0b 100%);
+            border: 2px solid #d97706;
+        }
+        .same-feature {
+            background: linear-gradient(120deg, #f1f5f9 0%, #94a3b8 100%);
+            border: 2px solid #64748b;
+        }
+        .confidence-high { border-left: 4px solid #10b981; }
+        .confidence-medium { border-left: 4px solid #f59e0b; }
+        .confidence-low { border-left: 4px solid #ef4444; }
+        .floating-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .text-highlight {
+            background: linear-gradient(120deg, #fef3c7 0%, #fbbf24 50%);
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.6);
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-black">
+    <!-- 浮动提示框 -->
+    <div id="tooltip" class="floating-tooltip"></div>
+    
+    <div class="flex flex-col h-screen overflow-hidden">
+
+        <!-- 主要内容区域 -->
+        <main class="flex-1 overflow-hidden">            
+            <!-- 阶段二：核心维度的深度对比分析 -->
+            <div id="stageTwoContent" class="h-full">
+                <div class="h-full flex">
+                    <!-- 维度选择侧边栏 -->
+                    <div class="w-64 bg-white border-r border-gray-200 flex-shrink-0">
+                        <div class="p-4 border-b border-gray-200">
+                            <h3 class="font-semibold text-gray-900">分析维度</h3>
+                            <p class="text-xs text-gray-500 mt-1">点击切换分析维度</p>
+                        </div>
+                        <div class="p-2">
+                            <button id="problemDimension" class="dimension-tab active w-full text-left p-3 rounded-lg mb-2 flex items-center transition-colors">
+                                <i class="ri-question-line text-lg mr-3"></i>
+                                <div>
+                                    <div class="font-medium">技术问题</div>
+                                    <div class="text-xs text-gray-500">What problem is solved?</div>
+                                </div>
+                            </button>
+                            <button id="solutionDimension" class="dimension-tab w-full text-left p-3 rounded-lg mb-2 flex items-center transition-colors">
+                                <i class="ri-lightbulb-line text-lg mr-3"></i>
+                                <div>
+                                    <div class="font-medium">技术方案</div>
+                                    <div class="text-xs text-gray-500">How is it solved?</div>
+                                </div>
+                            </button>
+                            <button id="effectDimension" class="dimension-tab w-full text-left p-3 rounded-lg mb-2 flex items-center transition-colors">
+                                <i class="ri-trophy-line text-lg mr-3"></i>
+                                <div>
+                                    <div class="font-medium">技术效果</div>
+                                    <div class="text-xs text-gray-500">What effect is achieved?</div>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <!-- 进度指示 -->
+                        <div class="p-4 border-t border-gray-200 mt-auto">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">评估进度</h4>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span>技术问题</span>
+                                    <span id="problemProgress" class="text-gray-400">未完成</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span>技术方案</span>
+                                    <span id="solutionProgress" class="text-gray-400">未完成</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span>技术效果</span>
+                                    <span id="effectProgress" class="text-gray-400">未完成</span>
+                                </div>
+                            </div>
+                            <button id="proceedToStage3" class="w-full mt-4 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                进入综合判断
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 主要分析区域 -->
+                    <div class="flex-1 overflow-hidden">
+                        <!-- 技术问题分析 -->
+                        <div id="problemAnalysis" class="dimension-content h-full overflow-y-auto p-6">
+                            <div class="max-w-6xl mx-auto">
+                                <div class="mb-6">
+                                    <h2 class="text-2xl font-bold text-gray-900 mb-2">技术问题对比分析</h2>
+                                    <p class="text-gray-600">分析待评估文本与对比文件要解决的技术问题是否相同</p>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                    <!-- 源文本问题 -->
+                                    <div class="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                                        <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+                                            <i class="ri-file-text-line mr-2"></i>待评估文本的技术问题
+                                        </h3>
+                                        <div id="sourceProblem" class="text-blue-800 mb-4">
+                                            <div class="animate-pulse">AI正在分析中...</div>
+                                        </div>
+                                        <button class="text-sm text-blue-600 hover:text-blue-800 flex items-center" onclick="toggleOriginalText('sourceProblemOriginal')">
+                                            <i class="ri-eye-line mr-1"></i>查看原始片段
+                                        </button>
+                                        <div id="sourceProblemOriginal" class="mt-3 p-3 bg-white rounded border hidden">
+                                            <div class="text-sm text-gray-700"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 对比文本问题 -->
+                                    <div class="bg-orange-50 rounded-xl p-6 border border-orange-200">
+                                        <h3 class="text-lg font-semibold text-orange-900 mb-4 flex items-center">
+                                            <i class="ri-file-list-line mr-2"></i>对比文件的技术问题
+                                        </h3>
+                                        <div id="compareProblem" class="text-orange-800 mb-4">
+                                            <div class="animate-pulse">AI正在分析中...</div>
+                                        </div>
+                                        <button class="text-sm text-orange-600 hover:text-orange-800 flex items-center" onclick="toggleOriginalText('compareProblemOriginal')">
+                                            <i class="ri-eye-line mr-1"></i>查看原始片段
+                                        </button>
+                                        <div id="compareProblemOriginal" class="mt-3 p-3 bg-white rounded border hidden">
+                                            <div class="text-sm text-gray-700"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI差异分析 -->
+                                <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="ri-brain-line mr-2 text-purple-600"></i>AI差异分析
+                                        <span class="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded confidence-high">高置信度</span>
+                                    </h3>
+                                    <div id="problemDifference" class="text-gray-800 mb-4">
+                                        <div class="animate-pulse">AI正在分析差异...</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 用户评估区 -->
+                                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4">您的评估</h3>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">技术问题的相似程度：</label>
+                                        <select id="problemSimilarity" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="">请选择...</option>
+                                            <option value="identical">问题完全相同</option>
+                                            <option value="similar">问题高度相关（相似领域相似目标）</option>
+                                            <option value="different">问题有差异（部分相关）</option>
+                                            <option value="completely_different">问题完全不同（或涉及新问题）</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">判断依据或补充说明：</label>
+                                        <textarea id="problemReason" class="w-full p-3 border border-gray-300 rounded-lg h-24 resize-none focus:ring-2 focus:ring-blue-500" placeholder="请说明您的判断依据，例如：虽然都涉及续航，但低温是全新场景..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 技术方案分析 -->
+                        <div id="solutionAnalysis" class="dimension-content h-full overflow-y-auto p-6 hidden">
+                            <div class="max-w-6xl mx-auto">
+                                <div class="mb-6">
+                                    <h2 class="text-2xl font-bold text-gray-900 mb-2">技术方案对比分析</h2>
+                                    <p class="text-gray-600">分析技术特征的差异，判断是否具有突出的实质性特点</p>
+                                </div>
+                                
+                                <!-- 技术特征对比树 -->
+                                <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="ri-node-tree mr-2 text-green-600"></i>技术特征分解对比
+                                        <button class="ml-auto text-sm text-gray-500 hover:text-gray-700" onclick="toggleFeatureFilter()">
+                                            <i class="ri-filter-line mr-1"></i>筛选差异
+                                        </button>
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <!-- 源文本特征 -->
+                                        <div>
+                                            <h4 class="font-medium text-blue-900 mb-3">待评估文本技术特征</h4>
+                                            <div id="sourceFeatures" class="space-y-2">
+                                                <div class="animate-pulse text-gray-500">AI正在提取技术特征...</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 对比文本特征 -->
+                                        <div>
+                                            <h4 class="font-medium text-orange-900 mb-3">对比文件技术特征</h4>
+                                            <div id="compareFeatures" class="space-y-2">
+                                                <div class="animate-pulse text-gray-500">AI正在提取技术特征...</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 特征映射可视化 -->
+                                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                                        <h4 class="font-medium text-gray-900 mb-3">特征映射关系</h4>
+                                        <div id="featureMapping" class="">
+                                            <div class="animate-pulse text-gray-500">AI正在分析特征映射...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI差异分析总结 -->
+                                <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="ri-brain-line mr-2 text-purple-600"></i>AI差异分析总结
+                                        <span class="ml-2 px-2 py-1 text-xs bg-green-100 text-green-700 rounded">强新颖性指示</span>
+                                    </h3>
+                                    <div id="solutionDifference" class="text-gray-800">
+                                        <div class="animate-pulse">AI正在分析技术方案差异...</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 用户评估区 -->
+                                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4">您的评估</h3>
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">是否存在突出的实质性特点？（创造性核心要素）</label>
+                                        <select id="substantialFeatures" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                            <option value="">请选择...</option>
+                                            <option value="yes">是 - 存在突出的实质性特点</option>
+                                            <option value="no">否 - 不存在突出的实质性特点</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">详细判断依据：<span class="text-red-500">*必填</span></label>
+                                        <textarea id="solutionReason" class="w-full p-3 border border-gray-300 rounded-lg h-32 resize-none focus:ring-2 focus:ring-blue-500" placeholder="请基于特征差异、组合的难度、效果的非预期性等进行详细阐述...\n\n例如：\n1. 新增的石墨烯材料在低温环境下的应用是本领域技术人员难以预见的\n2. 蜂窝状散热结构与传统鳍片式结构相比，在特定条件下产生了意想不到的协同效应\n3. 多个技术特征的组合方式超出了现有技术的教导范围"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 技术效果分析 -->
+                        <div id="effectAnalysis" class="dimension-content h-full overflow-y-auto p-6 hidden">
+                            <div class="max-w-6xl mx-auto">
+                                <div class="mb-6">
+                                    <h2 class="text-2xl font-bold text-gray-900 mb-2">技术效果对比分析</h2>
+                                    <p class="text-gray-600">分析技术效果的差异，判断是否产生显著进步或非预期效果</p>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                    <!-- 源文本效果 -->
+                                    <div class="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                                        <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+                                            <i class="ri-trophy-line mr-2"></i>待评估文本的技术效果
+                                        </h3>
+                                        <div id="sourceEffect" class="text-blue-800 mb-4">
+                                            <div class="animate-pulse">AI正在分析中...</div>
+                                        </div>
+                                        <button class="text-sm text-blue-600 hover:text-blue-800 flex items-center" onclick="toggleOriginalText('sourceEffectOriginal')">
+                                            <i class="ri-eye-line mr-1"></i>查看原始片段
+                                        </button>
+                                        <div id="sourceEffectOriginal" class="mt-3 p-3 bg-white rounded border hidden">
+                                            <div class="text-sm text-gray-700"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 对比文本效果 -->
+                                    <div class="bg-orange-50 rounded-xl p-6 border border-orange-200">
+                                        <h3 class="text-lg font-semibold text-orange-900 mb-4 flex items-center">
+                                            <i class="ri-trophy-line mr-2"></i>对比文件的技术效果
+                                        </h3>
+                                        <div id="compareEffect" class="text-orange-800 mb-4">
+                                            <div class="animate-pulse">AI正在分析中...</div>
+                                        </div>
+                                        <button class="text-sm text-orange-600 hover:text-orange-800 flex items-center" onclick="toggleOriginalText('compareEffectOriginal')">
+                                            <i class="ri-eye-line mr-1"></i>查看原始片段
+                                        </button>
+                                        <div id="compareEffectOriginal" class="mt-3 p-3 bg-white rounded border hidden">
+                                            <div class="text-sm text-gray-700"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 效果对应性分析 -->
+                                <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="ri-links-line mr-2 text-green-600"></i>效果与方案对应性分析
+                                    </h3>
+                                    <div id="effectCorrespondence" class="text-gray-800">
+                                        <div class="animate-pulse">AI正在分析效果与技术方案的对应关系...</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- AI差异分析 -->
+                                <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="ri-brain-line mr-2 text-purple-600"></i>AI差异分析
+                                        <span class="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded confidence-high">高置信度</span>
+                                    </h3>
+                                    <div id="effectDifference" class="text-gray-800">
+                                        <div class="animate-pulse">AI正在分析技术效果差异...</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 用户评估区 -->
+                                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4">您的评估</h3>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">效果是否对应方案解决了技术问题？</label>
+                                            <select id="effectCorrespondenceEval" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                                <option value="">请选择...</option>
+                                                <option value="yes">是 - 效果与方案逻辑自洽</option>
+                                                <option value="no">否 - 效果与方案不对应</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">效果是否显著优于预期？（创造性考量）</label>
+                                            <select id="effectSignificance" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                                <option value="">请选择...</option>
+                                                <option value="yes">是 - 显著优于预期</option>
+                                                <option value="no">否 - 在预期范围内</option>
+                                                <option value="uncertain">不确定</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">理由说明：</label>
+                                        <textarea id="effectReason" class="w-full p-3 border border-gray-300 rounded-lg h-24 resize-none focus:ring-2 focus:ring-blue-500" placeholder="请结合技术方案差异阐述原因，例如：石墨烯的低温特性在本领域应用导致如此大的提升是非预期的..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阶段三：综合判断与报告生成 -->
+            <div id="stageThreeContent" class="h-full p-6 hidden">
+                <div class="max-w-4xl mx-auto h-full overflow-y-auto">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">综合判断与结论</h2>
+                        <p class="text-gray-600">基于三个维度的分析结果，做出最终的新创性判断</p>
+                    </div>
+                    
+                    <!-- 总结看板 -->
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="ri-dashboard-line mr-2 text-blue-600"></i>三维度评估总结
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <h4 class="font-medium text-blue-900 mb-2">技术问题</h4>
+                                <div id="problemSummary" class="text-sm text-blue-800">未完成评估</div>
+                            </div>
+                            <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                                <h4 class="font-medium text-green-900 mb-2">技术方案</h4>
+                                <div id="solutionSummary" class="text-sm text-green-800">未完成评估</div>
+                            </div>
+                            <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                <h4 class="font-medium text-purple-900 mb-2">技术效果</h4>
+                                <div id="effectSummary" class="text-sm text-purple-800">未完成评估</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 核心新创性结论判断区 -->
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">核心新创性结论判断</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">新颖性判断：</label>
+                                <select id="noveltyJudgment" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="">请选择...</option>
+                                    <option value="yes">具备新颖性</option>
+                                    <option value="no">不具备新颖性</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">基于技术方案对比，特别是新增/修改特征是否已公开</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">创造性判断：</label>
+                                <select id="creativityJudgment" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="">请选择...</option>
+                                    <option value="yes">具备创造性（有突出的实质性特点和显著进步）</option>
+                                    <option value="no">不具备创造性</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">基于"实质性特点"和"显著进步/非预期效果"的判断</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 最终决定 -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">最终决定：<span class="text-red-500">*必选</span></label>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center">
+                                    <input type="radio" name="finalDecision" value="yes" class="mr-2">
+                                    <span class="text-green-700 font-medium">源文本具有新创性</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="finalDecision" value="no" class="mr-2">
+                                    <span class="text-red-700 font-medium">源文本缺乏新创性</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">综合理由：<span class="text-red-500">*必填</span></label>
+                            <textarea id="comprehensiveReason" class="w-full p-3 border border-gray-300 rounded-lg h-32 resize-none focus:ring-2 focus:ring-blue-500" placeholder="请基于三个维度的分析结果，阐述最终判断的综合性理由...\n\n建议包含：\n1. 技术问题的差异性分析\n2. 技术方案的创新点和实质性特点\n3. 技术效果的显著性和非预期性\n4. 综合考虑后的最终结论依据"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- AI辅助总结报告 -->
+                    <div class="bg-white rounded-xl p-6 border border-gray-200 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="ri-file-text-line mr-2 text-green-600"></i>AI辅助总结报告
+                        </h3>
+                        <div id="aiSummaryReport" class="text-gray-800 mb-4">
+                            <div class="text-gray-500">完成所有评估后，AI将生成结构化总结报告</div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button id="generateReportBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i class="ri-file-add-line mr-2"></i>生成报告
+                            </button>
+                            <button id="downloadPdfBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i class="ri-download-line mr-2"></i>下载PDF
+                            </button>
+                            <button id="downloadWordBtn" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i class="ri-file-word-line mr-2"></i>下载Word
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="flex justify-between">
+                        <button id="backToStage2" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center">
+                            <i class="ri-arrow-left-line mr-2"></i>返回维度分析
+                        </button>
+                        <button id="completeAssessment" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="ri-check-line mr-2"></i>完成评估
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+// 全局变量
+let currentStage = 1;
+let currentDimension = 'problem';
+let compareFileCount = 1;
+let assessmentData = {
+    sourceText: '',
+    compareTexts: [''],
+    problem: {
+        similarity: '',
+        reason: '',
+        completed: false
+    },
+    solution: {
+        substantialFeatures: '',
+        reason: '',
+        completed: false
+    },
+    effect: {
+        correspondence: '',
+        significance: '',
+        reason: '',
+        completed: false
+    },
+    finalJudgment: {
+        novelty: '',
+        creativity: '',
+        decision: '',
+        reason: '',
+        completed: false
+    }
+};
+
+// DOM加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    initializeEventListeners();
+    startAnalysis();
+});
+
+// 初始化事件监听器
+function initializeEventListeners() {
+    // 按钮事件监听
+    document.getElementById('problemDimension').addEventListener('click', () => switchDimension('problem'));
+    document.getElementById('solutionDimension').addEventListener('click', () => switchDimension('solution'));
+    document.getElementById('effectDimension').addEventListener('click', () => switchDimension('effect'));
+    document.getElementById('proceedToStage3').addEventListener('click', () => switchStage(3));
+    document.getElementById('backToStage2').addEventListener('click', () => switchStage(2));
+    document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => downloadReport('pdf'));
+    document.getElementById('downloadWordBtn').addEventListener('click', () => downloadReport('word'));
+    document.getElementById('completeAssessment').addEventListener('click', completeAssessment);
+    
+    // 评估输入监听
+    setupAssessmentListeners();
+}
+
+// 显示预览
+function showPreview(type) {
+    const previewId = type === 'source' ? 'sourcePreview' : 'comparePreview';
+    const keyInfoId = type === 'source' ? 'sourceKeyInfo' : 'compareKeyInfo';
+    const preview = document.getElementById(previewId);
+    const keyInfo = document.getElementById(keyInfoId);
+    
+    preview.classList.remove('hidden');
+    keyInfo.innerHTML = `
+        <div class="mb-2">
+            <span class="font-medium">识别的技术领域：</span>
+            <span class="text-highlight">电池技术、能源存储</span>
+        </div>
+        <div class="mb-2">
+            <span class="font-medium">主要技术问题：</span>
+            <span class="text-highlight">低温环境下电池续航不足</span>
+        </div>
+        <div>
+            <span class="font-medium">关键技术特征：</span>
+            <span class="text-highlight">石墨烯材料、蜂窝状结构</span>
+        </div>
+    `;
+}
+
+// 开始分析
+function startAnalysis() {
+    simulateAIAnalysis();
+}
+
+// 模拟AI分析
+function simulateAIAnalysis() {
+    // 模拟技术问题分析
+    setTimeout(() => {
+        displayProblemAnalysis();
+    }, 1000);
+    
+    // 模拟技术方案分析
+    setTimeout(() => {
+        displaySolutionAnalysis();
+    }, 2000);
+    
+    // 模拟技术效果分析
+    setTimeout(() => {
+        displayEffectAnalysis();
+    }, 3000);
+}
+
+// 显示技术问题分析结果
+function displayProblemAnalysis() {
+    document.getElementById('sourceProblem').innerHTML = `
+        <div class="mb-3">
+            <div class="font-medium text-blue-900 mb-2">核心技术问题：</div>
+            <div class="bg-white p-3 rounded border">
+                现有锂电池在<span class="diff-highlight">低温环境（-20°C以下）</span>下存在
+                <span class="diff-highlight">容量急剧下降</span>和<span class="diff-highlight">充电效率低</span>的问题，
+                严重影响电动汽车在寒冷地区的使用性能。
+            </div>
+        </div>
+        <div class="text-sm text-blue-700">
+            <i class="ri-lightbulb-line mr-1"></i>
+            AI识别置信度：95%
+        </div>
+    `;
+    
+    document.getElementById('compareProblem').innerHTML = `
+        <div class="mb-3">
+            <div class="font-medium text-orange-900 mb-2">核心技术问题：</div>
+            <div class="bg-white p-3 rounded border">
+                传统锂电池在<span class="diff-highlight">常温和高温环境</span>下的
+                <span class="diff-highlight">能量密度提升</span>和<span class="diff-highlight">循环寿命延长</span>问题。
+            </div>
+        </div>
+        <div class="text-sm text-orange-700">
+            <i class="ri-lightbulb-line mr-1"></i>
+            AI识别置信度：92%
+        </div>
+    `;
+    
+    document.getElementById('problemDifference').innerHTML = `
+        <div class="space-y-3">
+            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="font-medium text-yellow-800 mb-2">关键差异识别：</div>
+                <div class="text-yellow-700">
+                    • <strong>应用场景差异：</strong>待评估文本专注于<span class="diff-highlight">低温环境</span>，
+                    而对比文件主要针对<span class="diff-highlight">常温/高温环境</span><br>
+                    • <strong>技术焦点差异：</strong>前者解决<span class="diff-highlight">低温性能衰减</span>，
+                    后者解决<span class="diff-highlight">能量密度和寿命</span><br>
+                    • <strong>问题层次差异：</strong>低温应用是一个<span class="diff-highlight">新的技术挑战领域</span>
+                </div>
+            </div>
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="font-medium text-green-800 mb-2">AI初步判断：</div>
+                <div class="text-green-700">
+                    两者要解决的技术问题存在<strong>显著差异</strong>，低温环境下的电池性能问题
+                    在现有技术中<strong>未被充分解决</strong>，具有新颖性指示。
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 显示技术方案分析结果
+function displaySolutionAnalysis() {
+    generateSolutionAnalysis();
+}
+
+function generateSolutionAnalysis() {
+    // 源文本技术特征
+    document.getElementById('sourceFeatures').innerHTML = `
+        <div class="space-y-2">
+            <div class="p-3 rounded-lg new-feature">
+                <div class="font-medium">石墨烯复合电极材料</div>
+                <div class="text-sm text-gray-600">在负极中添加石墨烯纳米片</div>
+                <span class="text-xs bg-green-600 text-white px-2 py-1 rounded">新增特征</span>
+            </div>
+            <div class="p-3 rounded-lg modified-feature">
+                <div class="font-medium">蜂窝状散热结构</div>
+                <div class="text-sm text-gray-600">采用仿生蜂窝结构进行热管理</div>
+                <span class="text-xs bg-orange-600 text-white px-2 py-1 rounded">改进特征</span>
+            </div>
+            <div class="p-3 rounded-lg new-feature">
+                <div class="font-medium">低温激活涂层</div>
+                <div class="text-sm text-gray-600">电极表面的特殊催化涂层</div>
+                <span class="text-xs bg-green-600 text-white px-2 py-1 rounded">新增特征</span>
+            </div>
+            <div class="p-3 rounded-lg same-feature">
+                <div class="font-medium">锂离子传导机制</div>
+                <div class="text-sm text-gray-600">基本的锂离子电池工作原理</div>
+                <span class="text-xs bg-gray-600 text-white px-2 py-1 rounded">相同特征</span>
+            </div>
+        </div>
+    `;
+    
+    // 对比文本技术特征
+    document.getElementById('compareFeatures').innerHTML = `
+        <div class="space-y-2">
+            <div class="p-3 rounded-lg same-feature">
+                <div class="font-medium">硅基负极材料</div>
+                <div class="text-sm text-gray-600">传统硅基材料改进</div>
+                <span class="text-xs bg-gray-600 text-white px-2 py-1 rounded">已知特征</span>
+            </div>
+            <div class="p-3 rounded-lg same-feature">
+                <div class="font-medium">鳍片式散热结构</div>
+                <div class="text-sm text-gray-600">常规的鳍片散热设计</div>
+                <span class="text-xs bg-gray-600 text-white px-2 py-1 rounded">已知特征</span>
+            </div>
+            <div class="p-3 rounded-lg same-feature">
+                <div class="font-medium">电解液优化</div>
+                <div class="text-sm text-gray-600">改进电解液配方</div>
+                <span class="text-xs bg-gray-600 text-white px-2 py-1 rounded">已知特征</span>
+            </div>
+            <div class="p-3 rounded-lg same-feature">
+                <div class="font-medium">锂离子传导机制</div>
+                <div class="text-sm text-gray-600">基本的锂离子电池工作原理</div>
+                <span class="text-xs bg-gray-600 text-white px-2 py-1 rounded">相同特征</span>
+            </div>
+        </div>
+    `;
+    
+    // 特征映射
+    document.getElementById('featureMapping').innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <div class="text-sm font-medium text-gray-700">新增/改进特征：</div>
+                <div class="p-2 bg-green-100 rounded text-sm">• 石墨烯复合电极 → 无对应</div>
+                <div class="p-2 bg-orange-100 rounded text-sm">• 蜂窝状散热 ↔ 鳍片式散热</div>
+                <div class="p-2 bg-green-100 rounded text-sm">• 低温激活涂层 → 无对应</div>
+            </div>
+            <div class="space-y-2">
+                <div class="text-sm font-medium text-gray-700">相同特征：</div>
+                <div class="p-2 bg-gray-100 rounded text-sm">• 锂离子传导机制</div>
+                <div class="p-2 bg-gray-100 rounded text-sm">• 基本电池结构</div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('solutionDifference').innerHTML = `
+        <div class="space-y-4">
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="font-medium text-green-800 mb-2">突出的实质性特点识别：</div>
+                <div class="text-green-700 space-y-2">
+                    <div>• <strong>石墨烯在低温环境的应用：</strong>现有技术未公开石墨烯材料在低温电池中的具体应用方式</div>
+                    <div>• <strong>蜂窝状结构的热管理创新：</strong>相比传统鳍片式，在低温下具有更好的热传导均匀性</div>
+                    <div>• <strong>低温激活涂层技术：</strong>专门针对低温环境设计的催化涂层，现有技术中未见类似方案</div>
+                </div>
+            </div>
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="font-medium text-blue-800 mb-2">技术组合的非显而易见性：</div>
+                <div class="text-blue-700">
+                    三个核心特征的组合（石墨烯+蜂窝结构+低温涂层）在现有技术中未见教导，
+                    且这种组合专门针对低温环境优化，具有<strong>非显而易见性</strong>。
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 显示技术效果分析结果
+function displayEffectAnalysis() {
+    document.getElementById('sourceEffect').innerHTML = `
+        <div class="mb-3">
+            <div class="font-medium text-blue-900 mb-2">主要技术效果：</div>
+            <div class="bg-white p-3 rounded border space-y-2">
+                <div>• 在-20°C环境下，<span class="diff-highlight">电池容量保持率达到85%</span>（常规电池仅50%）</div>
+                <div>• <span class="diff-highlight">低温充电效率提升60%</span>，充电时间缩短至常温水平的1.2倍</div>
+                <div>• <span class="diff-highlight">循环寿命在低温下仍可达到2000次</span>以上</div>
+            </div>
+        </div>
+        <div class="text-sm text-blue-700">
+            <i class="ri-trophy-line mr-1"></i>
+            效果数据置信度：高
+        </div>
+    `;
+    
+    document.getElementById('compareEffect').innerHTML = `
+        <div class="mb-3">
+            <div class="font-medium text-orange-900 mb-2">主要技术效果：</div>
+            <div class="bg-white p-3 rounded border space-y-2">
+                <div>• 在常温下，<span class="diff-highlight">能量密度提升15%</span></div>
+                <div>• <span class="diff-highlight">循环寿命达到3000次</span></div>
+                <div>• <span class="diff-highlight">充电速度提升20%</span></div>
+            </div>
+        </div>
+        <div class="text-sm text-orange-700">
+            <i class="ri-trophy-line mr-1"></i>
+            效果数据置信度：高
+        </div>
+    `;
+    
+    document.getElementById('effectCorrespondence').innerHTML = `
+        <div class="space-y-3">
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="font-medium text-blue-800 mb-2">方案与效果对应性分析：</div>
+                <div class="text-blue-700 space-y-2">
+                    <div>• <strong>石墨烯材料</strong> → 提供低温下的高导电性，直接对应<strong>容量保持率提升</strong></div>
+                    <div>• <strong>蜂窝状散热结构</strong> → 改善热分布均匀性，对应<strong>充电效率提升</strong></div>
+                    <div>• <strong>低温激活涂层</strong> → 降低低温下的反应阻力，对应<strong>循环寿命保持</strong></div>
+                </div>
+            </div>
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="font-medium text-green-800 mb-2">逻辑自洽性评估：</div>
+                <div class="text-green-700">
+                    技术方案与技术效果之间存在<strong>清晰的因果关系</strong>，每个技术特征都有对应的效果体现，
+                    且效果的实现机理符合物理化学原理。
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('effectDifference').innerHTML = `
+        <div class="space-y-4">
+            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="font-medium text-yellow-800 mb-2">效果差异对比：</div>
+                <div class="text-yellow-700 space-y-2">
+                    <div>• <strong>应用环境差异：</strong>待评估文本在低温环境下的效果 vs 对比文件在常温下的效果</div>
+                    <div>• <strong>效果类型差异：</strong>前者重点解决低温性能衰减，后者重点提升常温性能</div>
+                    <div>• <strong>效果显著性：</strong>低温下85%容量保持率相比常规50%，提升幅度达70%</div>
+                </div>
+            </div>
+            <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div class="font-medium text-purple-800 mb-2">非预期效果识别：</div>
+                <div class="text-purple-700">
+                    石墨烯材料在低温环境下的应用产生了<strong>超出预期的协同效应</strong>，
+                    不仅解决了导电性问题，还意外地改善了电解液的流动性，
+                    这种效果在现有技术中<strong>未被预见</strong>。
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 切换阶段
+function switchStage(stage) {
+    // 隐藏所有阶段内容
+    if(stage === 2) {
+        document.getElementById('stageTwoContent').classList.remove('hidden');
+        document.getElementById('stageThreeContent').classList.add('hidden');
+    }
+    else
+    {
+        document.getElementById('stageTwoContent').classList.add('hidden');
+        document.getElementById('stageThreeContent').classList.remove('hidden');
+    }
+    
+    currentStage = stage;
+}
+
+// 切换维度
+function switchDimension(dimension) {
+    // 更新维度标签
+    document.querySelectorAll('.dimension-tab').forEach(tab => {
+        tab.classList.remove('active', 'bg-blue-100', 'text-blue-700');
+        tab.classList.add('hover:bg-gray-100');
+    });
+    
+    // 隐藏所有维度内容
+    document.querySelectorAll('.dimension-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // 显示当前维度
+    if (dimension === 'problem') {
+        document.getElementById('problemDimension').classList.add('active', 'bg-blue-100', 'text-blue-700');
+        document.getElementById('problemDimension').classList.remove('hover:bg-gray-100');
+        document.getElementById('problemAnalysis').classList.remove('hidden');
+    } else if (dimension === 'solution') {
+        document.getElementById('solutionDimension').classList.add('active', 'bg-blue-100', 'text-blue-700');
+        document.getElementById('solutionDimension').classList.remove('hover:bg-gray-100');
+        document.getElementById('solutionAnalysis').classList.remove('hidden');
+    } else if (dimension === 'effect') {
+        document.getElementById('effectDimension').classList.add('active', 'bg-blue-100', 'text-blue-700');
+        document.getElementById('effectDimension').classList.remove('hover:bg-gray-100');
+        document.getElementById('effectAnalysis').classList.remove('hidden');
+    }
+    
+    currentDimension = dimension;
+}
+
+// 设置评估监听器
+function setupAssessmentListeners() {
+    // 技术问题评估
+    document.getElementById('problemSimilarity').addEventListener('change', function() {
+        assessmentData.problem.similarity = this.value;
+        checkDimensionCompletion('problem');
+    });
+    
+    document.getElementById('problemReason').addEventListener('input', function() {
+        assessmentData.problem.reason = this.value;
+        checkDimensionCompletion('problem');
+    });
+    
+    // 技术方案评估
+    document.getElementById('substantialFeatures').addEventListener('change', function() {
+        assessmentData.solution.substantialFeatures = this.value;
+        checkDimensionCompletion('solution');
+    });
+    
+    document.getElementById('solutionReason').addEventListener('input', function() {
+        assessmentData.solution.reason = this.value;
+        checkDimensionCompletion('solution');
+    });
+    
+    // 技术效果评估
+    document.getElementById('effectCorrespondenceEval').addEventListener('change', function() {
+        assessmentData.effect.correspondence = this.value;
+        checkDimensionCompletion('effect');
+    });
+    
+    document.getElementById('effectSignificance').addEventListener('change', function() {
+        assessmentData.effect.significance = this.value;
+        checkDimensionCompletion('effect');
+    });
+    
+    document.getElementById('effectReason').addEventListener('input', function() {
+        assessmentData.effect.reason = this.value;
+        checkDimensionCompletion('effect');
+    });
+    
+    // 最终判断评估
+    document.getElementById('noveltyJudgment').addEventListener('change', function() {
+        assessmentData.finalJudgment.novelty = this.value;
+        checkFinalJudgmentCompletion();
+    });
+    
+    document.getElementById('creativityJudgment').addEventListener('change', function() {
+        assessmentData.finalJudgment.creativity = this.value;
+        checkFinalJudgmentCompletion();
+    });
+    
+    document.querySelectorAll('input[name="finalDecision"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            assessmentData.finalJudgment.decision = this.value;
+            checkFinalJudgmentCompletion();
+        });
+    });
+    
+    document.getElementById('comprehensiveReason').addEventListener('input', function() {
+        assessmentData.finalJudgment.reason = this.value;
+        checkFinalJudgmentCompletion();
+    });
+}
+
+// 检查维度完成状态
+function checkDimensionCompletion(dimension) {
+    let completed = false;
+    
+    if (dimension === 'problem') {
+        completed = assessmentData.problem.similarity && assessmentData.problem.reason.trim();
+        assessmentData.problem.completed = completed;
+        document.getElementById('problemProgress').textContent = completed ? '已完成' : '未完成';
+        document.getElementById('problemProgress').className = completed ? 'text-green-600' : 'text-gray-400';
+    } else if (dimension === 'solution') {
+        completed = assessmentData.solution.substantialFeatures && assessmentData.solution.reason.trim();
+        assessmentData.solution.completed = completed;
+        document.getElementById('solutionProgress').textContent = completed ? '已完成' : '未完成';
+        document.getElementById('solutionProgress').className = completed ? 'text-green-600' : 'text-gray-400';
+    } else if (dimension === 'effect') {
+        completed = assessmentData.effect.correspondence && assessmentData.effect.significance && assessmentData.effect.reason.trim();
+        assessmentData.effect.completed = completed;
+        document.getElementById('effectProgress').textContent = completed ? '已完成' : '未完成';
+        document.getElementById('effectProgress').className = completed ? 'text-green-600' : 'text-gray-400';
+    }
+    
+    // 检查是否可以进入第三阶段
+    const allCompleted = assessmentData.problem.completed && assessmentData.solution.completed && assessmentData.effect.completed;
+    document.getElementById('proceedToStage3').disabled = !allCompleted;
+}
+
+// 检查最终判断完成状态
+function checkFinalJudgmentCompletion() {
+    const completed = assessmentData.finalJudgment.novelty && 
+                     assessmentData.finalJudgment.creativity && 
+                     assessmentData.finalJudgment.decision && 
+                     assessmentData.finalJudgment.reason.trim();
+    
+    assessmentData.finalJudgment.completed = completed;
+    document.getElementById('generateReportBtn').disabled = !completed;
+    document.getElementById('completeAssessment').disabled = !completed;
+}
+
+// 更新第三阶段总结
+function updateStage3Summary() {
+    // 技术问题总结
+    const problemSummary = assessmentData.problem.completed ? 
+        `相似程度：${getSimilarityText(assessmentData.problem.similarity)}` : '未完成评估';
+    document.getElementById('problemSummary').textContent = problemSummary;
+    
+    // 技术方案总结
+    const solutionSummary = assessmentData.solution.completed ? 
+        `实质性特点：${getSubstantialFeaturesText(assessmentData.solution.substantialFeatures)}` : '未完成评估';
+    document.getElementById('solutionSummary').textContent = solutionSummary;
+    
+    // 技术效果总结
+    const effectSummary = assessmentData.effect.completed ? 
+        `效果显著性：${getEffectSignificanceText(assessmentData.effect.significance)}` : '未完成评估';
+    document.getElementById('effectSummary').textContent = effectSummary;
+}
+
+// 辅助函数：获取相似程度文本
+function getSimilarityText(value) {
+    const map = {
+        'identical': '完全相同',
+        'similar': '高度相关',
+        'different': '有差异',
+        'completely_different': '完全不同'
+    };
+    return map[value] || value;
+}
+
+// 辅助函数：获取实质性特点文本
+function getSubstantialFeaturesText(value) {
+    return value === 'yes' ? '存在' : '不存在';
+}
+
+// 辅助函数：获取效果显著性文本
+function getEffectSignificanceText(value) {
+    const map = {
+        'yes': '显著优于预期',
+        'no': '在预期范围内',
+        'uncertain': '不确定'
+    };
+    return map[value] || value;
+}
+
+// 添加对比文件
+function addCompareFile() {
+    compareFileCount++;
+    const tabsContainer = document.getElementById('compareFileTabs');
+    const textContainer = document.getElementById('compareTextContainer');
+    
+    // 添加新标签
+    const newTab = document.createElement('button');
+    newTab.className = 'compare-tab px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-orange-100 hover:text-orange-700';
+    newTab.setAttribute('data-index', compareFileCount - 1);
+    newTab.textContent = `对比文件${compareFileCount}`;
+    newTab.addEventListener('click', () => switchCompareFile(compareFileCount - 1));
+    tabsContainer.appendChild(newTab);
+    
+    // 添加新文本区域
+    const newTextarea = document.createElement('textarea');
+    newTextarea.id = `compareText${compareFileCount - 1}`;
+    newTextarea.className = 'w-full h-64 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent hidden';
+    newTextarea.placeholder = '请粘贴或输入对比文献内容...';
+    textContainer.appendChild(newTextarea);
+    
+    // 切换到新文件
+    switchCompareFile(compareFileCount - 1);
+    
+    // 扩展数据数组
+    assessmentData.compareTexts.push('');
+}
+
+// 切换对比文件
+function switchCompareFile(index) {
+    // 更新标签状态
+    document.querySelectorAll('.compare-tab').forEach(tab => {
+        tab.classList.remove('active', 'bg-orange-100', 'text-orange-700');
+        tab.classList.add('bg-gray-100', 'text-gray-700');
+    });
+    
+    document.querySelector(`[data-index="${index}"]`).classList.add('active', 'bg-orange-100', 'text-orange-700');
+    document.querySelector(`[data-index="${index}"]`).classList.remove('bg-gray-100', 'text-gray-700');
+    
+    // 切换文本区域
+    document.querySelectorAll('[id^="compareText"]').forEach(textarea => {
+        textarea.classList.add('hidden');
+    });
+    
+    document.getElementById(`compareText${index}`).classList.remove('hidden');
+}
+
+// 切换原始文本显示
+function toggleOriginalText(elementId) {
+    const element = document.getElementById(elementId);
+    if (element.classList.contains('hidden')) {
+        element.classList.remove('hidden');
+        // 这里可以加载实际的原始文本片段
+        element.querySelector('div').textContent = '这里显示从原始文本中提取的相关片段...';
+    } else {
+        element.classList.add('hidden');
+    }
+}
+
+// 切换特征筛选
+function toggleFeatureFilter() {
+    // 这里可以实现特征筛选功能
+    console.log('切换特征筛选');
+}
+
+// 生成报告
+function generateReport() {
+    const reportContent = `
+        <div class="space-y-6">
+            <div class="border-b border-gray-200 pb-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">专利新创性评估报告</h3>
+                <div class="text-sm text-gray-600">
+                    <div>评估时间：${new Date().toLocaleString()}</div>
+                    <div>评估方法：三维度对比分析法</div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">一、技术问题分析</h4>
+                <div class="text-sm text-gray-700 space-y-1">
+                    <div><strong>相似程度：</strong>${getSimilarityText(assessmentData.problem.similarity)}</div>
+                    <div><strong>分析依据：</strong>${assessmentData.problem.reason}</div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">二、技术方案分析</h4>
+                <div class="text-sm text-gray-700 space-y-1">
+                    <div><strong>实质性特点：</strong>${getSubstantialFeaturesText(assessmentData.solution.substantialFeatures)}</div>
+                    <div><strong>分析依据：</strong>${assessmentData.solution.reason}</div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-2">三、技术效果分析</h4>
+                <div class="text-sm text-gray-700 space-y-1">
+                    <div><strong>效果对应性：</strong>${assessmentData.effect.correspondence === 'yes' ? '对应' : '不对应'}</div>
+                    <div><strong>效果显著性：</strong>${getEffectSignificanceText(assessmentData.effect.significance)}</div>
+                    <div><strong>分析依据：</strong>${assessmentData.effect.reason}</div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-4">
+                <h4 class="font-medium text-gray-900 mb-2">四、综合结论</h4>
+                <div class="text-sm text-gray-700 space-y-1">
+                    <div><strong>新颖性：</strong>${assessmentData.finalJudgment.novelty === 'yes' ? '具备' : '不具备'}</div>
+                    <div><strong>创造性：</strong>${assessmentData.finalJudgment.creativity === 'yes' ? '具备' : '不具备'}</div>
+                    <div><strong>最终判断：</strong>${assessmentData.finalJudgment.decision === 'yes' ? '具有新创性' : '缺乏新创性'}</div>
+                    <div><strong>综合理由：</strong>${assessmentData.finalJudgment.reason}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('aiSummaryReport').innerHTML = reportContent;
+    document.getElementById('downloadPdfBtn').disabled = false;
+    document.getElementById('downloadWordBtn').disabled = false;
+}
+
+// 下载报告
+function downloadReport(format) {
+    if (format === 'pdf') {
+        // 这里实现PDF下载逻辑
+        alert('PDF报告下载功能开发中...');
+    } else if (format === 'word') {
+        // 这里实现Word下载逻辑
+        alert('Word报告下载功能开发中...');
+    }
+}
+
+// 完成评估
+function completeAssessment() {
+    if (confirm('确认完成评估？完成后将保存所有评估数据。')) {
+        // 这里可以实现数据保存逻辑
+        alert('评估已完成并保存！');
+    }
+}
+</script>
+</body>
+</html>

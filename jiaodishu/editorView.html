@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术交底书浏览系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        .tab-active {
+            color: #0284c7;
+            border-bottom: 2px solid #0284c7;
+        }
+        .resizer {
+            width: 5px;
+            cursor: col-resize;
+            background-color: #e5e7eb;
+        }
+        .resizer:hover {
+            background-color: #d1d5db;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* 全局滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        
+        /* 技术关系图样式 */
+        .tech-graph {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .node circle {
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+        .node text {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        .link {
+            stroke: #94a3b8;
+            stroke-width: 1.5px;
+            stroke-opacity: 0.6;
+        }
+        .link:hover {
+            stroke-opacity: 1;
+            stroke-width: 2px;
+        }
+        
+        /* 只读样式 */
+        .readonly-field {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #374151;
+            cursor: default;
+        }
+        .readonly-field:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-black">
+    <div class="flex flex-col h-screen overflow-hidden">
+        <!-- 主体内容区 -->
+        <div class="flex-1 flex overflow-hidden">
+            <!-- 左侧交底书浏览区 -->
+            <div id="viewerSection" class="flex-1 flex flex-col overflow-hidden">
+                <!-- 顶部导航栏 -->
+                <div class="bg-white border-b shadow-sm">
+                    <div class="container-fluid px-0 py-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex flex-col ml-4">
+                                <h2 id="disclosureTitle" class="text-lg font-medium">一种基于深度学习的智能语音识别系统</h2>
+                                <div class="flex items-center space-x-4 mt-1 text-sm text-gray-600">
+                                    <span class="flex items-center">
+                                        <i class="ri-user-line mr-1"></i>
+                                        创建人：张工程师
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="ri-time-line mr-1"></i>
+                                        修改时间：2024-01-15 14:30
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 mr-6"> 
+                                <button id="exportBtn" class="py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition duration-200 flex items-center">
+                                    <i class="ri-download-line mr-1"></i> 下载
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 浏览区内容 -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div id="disclosureContent">
+                        <!-- 发明名称 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">本发明的名称</label>
+                            <div class="w-full p-3 readonly-field rounded-lg text-sm">一种基于深度学习的智能语音识别系统</div>
+                        </div>
+                        
+                        <!-- 技术问题 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">本发明解决的技术问题</label>
+                            <div class="w-full p-3 readonly-field rounded-lg text-sm min-h-[100px]">现有的语音识别系统在嘈杂环境下识别准确率低，对方言和口音的适应性差，处理速度慢，且难以识别专业领域的术语。这些问题严重影响了语音识别技术在实际应用中的效果和用户体验。本发明旨在解决上述问题，提高语音识别的准确率、速度和适应性。</div>
+                        </div>
+                        
+                        <!-- 技术方案 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">解决该技术问题的技术方案</label>
+                            <div class="w-full p-3 readonly-field rounded-lg text-sm min-h-[150px]">本发明提供了一种基于深度学习的智能语音识别系统，该系统包括：<br>
+1. 多通道麦克风阵列和自适应噪声抑制模块，用于在嘈杂环境中获取高质量语音信号；<br>
+2. 基于改进的Transformer架构的声学模型，能够更好地捕捉语音的上下文信息；<br>
+3. 多方言适应性训练模块，通过迁移学习技术快速适应不同方言和口音；<br>
+4. 轻量化神经网络结构和模型量化技术，显著提高处理速度；<br>
+5. 领域专业术语识别增强模块，通过领域知识图谱辅助识别专业术语。</div>
+                        </div>
+                        
+                        <!-- 技术效果 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">本发明达到的技术效果</label>
+                            <div class="w-full p-3 readonly-field rounded-lg text-sm min-h-[150px]">通过采用本发明的技术方案，实现了以下技术效果：<br>
+1. 在5dB信噪比的嘈杂环境下，识别准确率仍能达到90%以上，比现有技术提高15%；<br>
+2. 对方言和口音的适应性显著增强，新口音的适应训练时间缩短60%；<br>
+3. 处理速度提高30%，实现近实时语音识别；<br>
+4. 专业领域术语的识别准确率提高25%，满足各行业专业应用需求。</div>
+                        </div>
+                        
+                        <!-- 实施例 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">本发明技术方案对应的实施例</label>
+                            <div class="w-full p-3 readonly-field rounded-lg text-sm min-h-[200px]"><strong>【实施例1】</strong><br>
+一种基于深度学习的智能语音识别系统，包括以下模块：<br><br>
+
+<strong>1. 语音信号采集与预处理模块：</strong><br>
+采用7通道麦克风阵列采集声音信号，通过波束形成技术对声源进行定位，结合自适应滤波算法进行噪声抑制。具体地，使用最小均方误差准则的自适应滤波器，滤波器系数通过递归最小二乘算法实时更新，能够有效抑制背景噪声和混响。<br><br>
+
+<strong>2. 声学特征提取模块：</strong><br>
+对预处理后的语音信号进行分帧和加窗处理，帧长为25ms，帧移为10ms，采用汉明窗。然后提取40维梅尔频率倒谱系数(MFCC)特征，并进行倒谱均值减法进行信道补偿。<br><br>
+
+<strong>3. 声学模型：</strong><br>
+采用改进的Transformer架构，包含12层编码器和解码器，每层有8个注意力头，模型维度为512。相比传统Transformer，引入了局部注意力机制，能够更好地捕捉语音的局部相关性。同时，采用相对位置编码替代绝对位置编码，提高了模型对长语音的建模能力。<br><br>
+
+<strong>4. 语言模型：</strong><br>
+采用基于BERT的预训练语言模型，在大规模文本语料上进行预训练，然后在特定领域语料上进行微调。模型包含6层Transformer结构，隐层维度为768，注意力头数为12。<br><br>
+
+<strong>5. 多方言适应性训练模块：</strong><br>
+基于迁移学习技术，构建一个通用声学模型，然后通过少量特定方言数据进行微调。具体地，冻结模型底层参数，只更新顶层参数，实现快速适应。此外，引入方言特征向量作为辅助输入，增强模型对方言特征的感知能力。<br><br>
+
+<strong>6. 模型优化与加速模块：</strong><br>
+采用知识蒸馏技术，将大型教师模型的知识迁移到小型学生模型中。同时，通过8位量化和稀疏化处理，减小模型体积并提高推理速度。在ARM架构处理器上，通过NEON指令集优化矩阵运算，进一步提高处理速度。<br><br>
+
+<strong>7. 专业术语识别增强模块：</strong><br>
+构建领域知识图谱，包含专业术语及其关系。在解码过程中，结合知识图谱信息调整语言模型的概率分布，提高专业术语的识别准确率。同时，通过用户反馈机制不断更新和扩充知识图谱。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 中间分隔线 -->
+            <div id="resizer" class="resizer"></div>
+            
+            <div id="assistentSection" class="w-2/5 flex flex-col bg-white border-l">
+                <!-- 右侧助手区切换 -->
+                <div id="rightSectionTabs" class="border-b">
+                    <div class="flex">
+                        <button id="chaxinTab" class="tab-active px-4 py-3 text-sm font-medium text-gray-500 flex items-center">
+                            <i class="ri-file-search-line mr-1.5"></i> 查新助手
+                        </button>
+                        <button id="techAnalysisTab" class="px-4 py-3 text-sm font-medium flex items-center">
+                            <i class="ri-mind-map mr-1.5"></i> 技术解读
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 技术解读助手区 -->
+                <div id="techAnalysisSection" class="flex-1 flex flex-col h-full hidden">
+                    <!-- 技术特征提取区 -->
+                    <div class="p-4 border-b">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-medium text-gray-800">核心技术特征</h3>
+                            <button id="extractFeaturesBtn" class="text-xs bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded transition duration-200">
+                                <i class="ri-cpu-line mr-1"></i> 提取特征
+                            </button>
+                        </div>
+                        <div id="techFeatures" class="space-y-2">
+                            <div class="text-xs text-gray-500 text-center py-4">点击"提取特征"分析技术交底书</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 技术关系图区 -->
+                    <div class="flex-1 p-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-medium text-gray-800">技术关系图</h3>
+                            <button id="generateGraphBtn" class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition duration-200">
+                                <i class="ri-share-circle-line mr-1"></i> 生成关系图
+                            </button>
+                        </div>
+                        <div id="techGraph" class="tech-graph h-80 flex items-center justify-center">
+                            <div class="text-xs text-gray-500 text-center">
+                                <i class="ri-mind-map text-2xl mb-2 block"></i>
+                                技术关系图将在这里显示
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 技术分析结果 -->
+                    <div class="p-4 border-t">
+                        <h3 class="text-sm font-medium text-gray-800 mb-3">技术分析结果</h3>
+                        <div id="analysisResult" class="text-xs text-gray-600 bg-gray-50 p-3 rounded max-h-32 overflow-y-auto">
+                            技术分析结果将在这里显示...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 查新比对区 -->
+                <div id="chaxinSection" class="flex-1 flex flex-col h-full">
+                    <!-- 查新引导区域 -->
+                    <div id="chaxinGuide" class="flex-1 flex flex-col items-center justify-center p-6 py-12">
+                        <div class="text-center max-w-md -mt-16">
+                            <i class="ri-search-line text-6xl text-primary-300 mb-8"></i>
+                            <h3 class="text-xl font-medium text-gray-800 mb-4">您尚未进行查新</h3>
+                            <p class="text-gray-600 mb-10">查新可以帮助您了解您的发明与现有技术的异同，提高专利申请的成功率</p>
+                            <div class="flex flex-col space-y-3">
+                                <button id="goToChaxinBtn" class="py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition duration-200 flex items-center justify-center">
+                                    <i class="ri-search-eye-line mr-2"></i> 去查新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 查新完成提示区域 (初始隐藏) -->
+                    <div id="chaxinComplete" class="flex-1 flex flex-col items-center justify-center p-6 py-12 hidden">
+                        <div class="text-center max-w-md -mt-16">
+                            <i class="ri-check-double-line text-6xl text-green-400 mb-8"></i>
+                            <h3 class="text-xl font-medium text-gray-800 mb-4">查新已完成？</h3>
+                            <p class="text-gray-600 mb-10">您可以刷新页面导入查新比对结果</p>
+                            <div class="flex flex-col space-y-3">
+                                <button id="refreshChaxinBtn" class="py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition duration-200 flex items-center justify-center">
+                                    <i class="ri-refresh-line mr-2"></i> 刷新导入
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 标签页切换功能
+        document.getElementById('chaxinTab').addEventListener('click', function() {
+            // 切换标签样式
+            document.getElementById('chaxinTab').classList.add('tab-active');
+            document.getElementById('techAnalysisTab').classList.remove('tab-active');
+            
+            // 切换内容区域
+            document.getElementById('chaxinSection').classList.remove('hidden');
+            document.getElementById('techAnalysisSection').classList.add('hidden');
+        });
+        
+        document.getElementById('techAnalysisTab').addEventListener('click', function() {
+            // 切换标签样式
+            document.getElementById('techAnalysisTab').classList.add('tab-active');
+            document.getElementById('chaxinTab').classList.remove('tab-active');
+            
+            // 切换内容区域
+            document.getElementById('techAnalysisSection').classList.remove('hidden');
+            document.getElementById('chaxinSection').classList.add('hidden');
+        });
+        
+        // 技术特征提取功能
+        document.getElementById('extractFeaturesBtn').addEventListener('click', function() {
+            const featuresContainer = document.getElementById('techFeatures');
+            featuresContainer.innerHTML = `
+                <div class="flex items-center text-xs text-blue-600 mb-2">
+                    <i class="ri-loader-4-line animate-spin mr-2"></i>
+                    正在分析技术交底书...
+                </div>
+            `;
+            
+            // 模拟分析过程
+            setTimeout(() => {
+                featuresContainer.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="bg-blue-50 border border-blue-200 rounded p-2">
+                            <div class="text-xs font-medium text-blue-800">核心技术1</div>
+                            <div class="text-xs text-blue-600">深度学习语音识别</div>
+                        </div>
+                        <div class="bg-green-50 border border-green-200 rounded p-2">
+                            <div class="text-xs font-medium text-green-800">核心技术2</div>
+                            <div class="text-xs text-green-600">多通道麦克风阵列</div>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 rounded p-2">
+                            <div class="text-xs font-medium text-purple-800">核心技术3</div>
+                            <div class="text-xs text-purple-600">Transformer架构优化</div>
+                        </div>
+                        <div class="bg-orange-50 border border-orange-200 rounded p-2">
+                            <div class="text-xs font-medium text-orange-800">核心技术4</div>
+                            <div class="text-xs text-orange-600">多方言适应性训练</div>
+                        </div>
+                        <div class="bg-red-50 border border-red-200 rounded p-2">
+                            <div class="text-xs font-medium text-red-800">核心技术5</div>
+                            <div class="text-xs text-red-600">专业术语识别增强</div>
+                        </div>
+                    </div>
+                `;
+            }, 2000);
+        });
+        
+        // 技术关系图生成功能
+        document.getElementById('generateGraphBtn').addEventListener('click', function() {
+            const graphContainer = document.getElementById('techGraph');
+            graphContainer.innerHTML = '';
+            
+            // 创建SVG
+            const width = graphContainer.clientWidth;
+            const height = graphContainer.clientHeight;
+            
+            const svg = d3.select('#techGraph')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // 定义节点数据
+            const nodes = [
+                {id: 'core', name: '智能语音识别系统', type: 'core', x: width/2, y: height/2},
+                {id: 'mic', name: '麦克风阵列', type: 'input', x: width*0.2, y: height*0.3},
+                {id: 'noise', name: '噪声抑制', type: 'process', x: width*0.2, y: height*0.7},
+                {id: 'transformer', name: 'Transformer模型', type: 'ai', x: width*0.8, y: height*0.3},
+                {id: 'dialect', name: '方言适应', type: 'feature', x: width*0.8, y: height*0.7},
+                {id: 'term', name: '术语识别', type: 'feature', x: width*0.5, y: height*0.1}
+            ];
+            
+            // 定义连接数据
+            const links = [
+                {source: 'mic', target: 'core'},
+                {source: 'noise', target: 'core'},
+                {source: 'core', target: 'transformer'},
+                {source: 'core', target: 'dialect'},
+                {source: 'core', target: 'term'}
+            ];
+            
+            // 颜色映射
+            const colorMap = {
+                'core': '#3b82f6',
+                'input': '#10b981',
+                'process': '#f59e0b',
+                'ai': '#8b5cf6',
+                'feature': '#ef4444'
+            };
+            
+            // 绘制连接线
+            svg.selectAll('.link')
+                .data(links)
+                .enter()
+                .append('line')
+                .attr('class', 'link')
+                .attr('x1', d => nodes.find(n => n.id === d.source).x)
+                .attr('y1', d => nodes.find(n => n.id === d.source).y)
+                .attr('x2', d => nodes.find(n => n.id === d.target).x)
+                .attr('y2', d => nodes.find(n => n.id === d.target).y);
+            
+            // 绘制节点
+            const nodeGroups = svg.selectAll('.node')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', 'node')
+                .attr('transform', d => `translate(${d.x}, ${d.y})`);
+            
+            nodeGroups.append('circle')
+                .attr('r', d => d.type === 'core' ? 25 : 18)
+                .attr('fill', d => colorMap[d.type]);
+            
+            nodeGroups.append('text')
+                .text(d => d.name)
+                .attr('dy', d => d.type === 'core' ? 35 : 28)
+                .style('font-size', '10px')
+                .style('text-anchor', 'middle')
+                .style('fill', '#374151');
+            
+            // 更新分析结果
+            document.getElementById('analysisResult').innerHTML = `
+                <div class="space-y-2">
+                    <div><strong>技术架构分析：</strong></div>
+                    <div>• 系统采用模块化设计，包含5个核心技术模块</div>
+                    <div>• 以智能语音识别系统为核心，各模块协同工作</div>
+                    <div>• 技术路径清晰：信号采集 → 预处理 → AI识别 → 特征增强</div>
+                    <div><strong>创新点分析：</strong></div>
+                    <div>• Transformer架构优化是核心创新</div>
+                    <div>• 多方言适应和专业术语识别为差异化特征</div>
+                    <div>• 技术方案具有较强的实用性和先进性</div>
+                </div>
+            `;
+        });
+        
+        // 分隔线拖拽功能
+        let isResizing = false;
+        
+        document.getElementById('resizer').addEventListener('mousedown', function(e) {
+            isResizing = true;
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+        
+        function handleMouseMove(e) {
+            if (!isResizing) return;
+            
+            const container = document.querySelector('.flex-1.flex');
+            const containerRect = container.getBoundingClientRect();
+            const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+            
+            if (newLeftWidth > 30 && newLeftWidth < 70) {
+                document.getElementById('viewerSection').style.width = newLeftWidth + '%';
+                document.getElementById('assistentSection').style.width = (100 - newLeftWidth) + '%';
+            }
+        }
+        
+        function handleMouseUp() {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        }
+        
+        
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            
+        });
+        
+        document.getElementById('goToChaxinBtn').addEventListener('click', function() {
+            window.location.href = 'chaxin.html';
+        });
+        
+        document.getElementById('refreshChaxinBtn').addEventListener('click', function() {
+            alert('刷新查新结果');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI专利申请文本生成工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        /* .tab-active {
+            color: #0284c7;
+            border-bottom: 2px solid #0284c7;
+        }
+       .tab-inactive {
+            color: #6b7280;
+        }
+       .tab-inactive:hover {
+            color: #0284c7;
+        } */
+        .upload-area { transition: all 0.3s ease; }
+        .upload-area:hover { border-color: #0284c7; background-color: #f0f9ff; }
+        .upload-area.dragover { border-color: #0284c7; background-color: #e0f2fe; transform: scale(1.02); }
+        .progress-bar { transition: width 0.3s ease; }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-draft { background-color: #e5e7eb; color: #4b5563; }
+        .status-progress { background-color: #fef3c7; color: #92400e; }
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        /* 在<style>标签中添加以下样式 */
+        .tab-button {
+            color: #6b7280;
+            background-color: transparent;
+        }
+
+        .tab-button.tab-active {
+            color: #5d92de;
+            background-color: rgb(255, 255, 255);
+            box-shadow: 0 1px 3px 0 rgba(150, 122, 249, 0.5), 0 1px 2px 0 rgba(151, 125, 246, 0.06);
+        }
+
+        .tab-button:hover:not(.tab-active) {
+            color: #374151;
+            background-color: rgba(233, 229, 248, 0.5);
+        }
+
+        .disclosure-item.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.01);
+        }
+
+        /* 改进的状态标签样式 */
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-progress {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-draft {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-black">
+    <!-- 主面板 -->
+    <div class="flex h-screen overflow-hidden">
+        <!-- 左侧边栏 -->
+        <div id="sidebar" class="w-96 bg-gradient-to-b from-white to-gray-50 shadow-lg flex flex-col h-full border-r border-gray-200 transition-all duration-300">
+            <!-- 顶部标题区域 -->
+            <div class="p-6 border-b border-gray-100 bg-white">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                            <i class="ri-file-list-3-line text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">交底书档案</h2>
+                            <!-- <p class="text-xs text-gray-500">管理您的专利申请文档</p> -->
+                        </div>
+                    </div>
+                    <!-- 收缩按钮 -->
+                    <button id="toggleSidebar" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200" title="收缩侧边栏">
+                        <i id="toggleIcon" class="ri-arrow-left-s-line text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- 搜索框 - 改进设计 -->
+                <div class="relative">
+                    <input type="text" placeholder="搜索交底书..." 
+                           class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                  focus:bg-white transition-all duration-200">
+                    <i class="ri-search-line absolute left-3 top-3.5 text-gray-400 text-sm"></i>
+                    <button class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="ri-filter-3-line text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 历史交底书书列表 -->
+            <div class="flex-1 overflow-y-auto px-6">
+                <div class="space-y-3 max-w-6xl">
+                    <!-- 申请书项目 2 -->
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-green-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible" 
+                         onclick="showApplicationResult(2)">
+                        <div class="p-4">
+                            <!-- 第一行：标题和操作按钮 -->
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-green-700 
+                                           transition-colors flex-1 mr-2">一种区块链数据存储方法</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <!-- 下拉菜单 -->
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-share-line mr-2"></i>分享
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 第二行：时间和状态 -->
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center text-gray-500">
+                                    <i class="ri-calendar-line mr-1"></i>
+                                    2024-01-18
+                                </span>
+                                <span class="status-badge status-completed">我创建的</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 申请书项目 3 -->
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-purple-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible" 
+                         onclick="showApplicationResult(2)">
+                        <div class="p-4">
+                            <!-- 第一行：标题和操作按钮 -->
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-purple-700 
+                                           transition-colors flex-1 mr-2">一种机器学习算法优化</h3>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <!-- 下拉菜单 -->
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-share-line mr-2"></i>分享
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 第二行：时间和状态 -->
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center text-gray-500">
+                                    <i class="ri-calendar-line mr-1"></i>
+                                    2024-01-18
+                                </span>
+                                <span class="status-badge status-completed">我创建的</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 申请书项目 1 - 改进设计 -->
+                    <div class="group bg-white rounded-xl border border-gray-300 hover:border-blue-300 
+                                hover:shadow-md transition-all duration-200 cursor-pointer overflow-visible" 
+                         onclick="showApplicationResult(1)">
+                        <div class="p-4">
+                            <!-- 第一行：标题和操作按钮 -->
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 text-sm truncate group-hover:text-blue-700 
+                                           transition-colors flex-1 mr-2">一种智能语音识别系统</h3>
+                                <span class="bg-red-50 text-red-600 text-xs px-2 py-1 rounded-full font-medium">new</span>
+                                <div class="relative">
+                                    <button class="p-1 text-gray-400 hover:text-gray-600 hover:bg-blue-50 transition-colors" 
+                                            onclick="event.stopPropagation(); toggleDropdown(this)">
+                                        <i class="ri-more-2-line text-lg"></i>
+                                    </button>
+                                    <!-- 下拉菜单 -->
+                                    <div class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 
+                                                rounded-lg shadow-lg z-50 hidden">
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); downloadFile()">
+                                            <i class="ri-download-line mr-2"></i>下载
+                                        </button>
+                                        <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); transformFile()">
+                                            <i class="ri-file-text-line mr-2"></i>写申请书
+                                        </button>
+                                        <!-- <button class="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 
+                                                       flex items-center" onclick="event.stopPropagation(); shareFile()">
+                                            <i class="ri-share-line mr-2"></i>分享
+                                        </button> -->
+                                        <button class="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 
+                                                       flex items-center" onclick="event.stopPropagation(); deleteFile()">
+                                            <i class="ri-delete-bin-line mr-2"></i>删除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 第二行：时间和状态 -->
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center text-gray-500">
+                                    <i class="ri-calendar-line mr-1"></i>
+                                    2024-01-18
+                                </span>
+                                <span class="status-badge status-progress">他人分享的</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 加载更多按钮 -->
+                <div class="mt-4 text-center">
+                    <button class="px-4 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 
+                                   rounded-lg transition-colors flex items-center justify-center mx-auto">
+                        <i class="ri-refresh-line mr-2"></i>
+                        加载更多
+                    </button>
+                </div>
+            </div>
+
+            <!-- 底部统计信息 -->
+            <div class="px-6 py-4 bg-white border-t border-gray-200">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <button class="hover:bg-blue-50">
+                        <div class="text-lg font-semibold text-blue-600">12</div>
+                        <div class="text-xs text-gray-500">总交底书</div>
+                    </button>
+                    <button  class="hover:bg-blue-50">
+                        <div class="text-lg font-semibold text-green-600">8</div>
+                        <div class="text-xs text-gray-500">我创建的</div>
+                    </button>
+                    <button  class="hover:bg-blue-50">
+                        <div class="text-lg font-semibold text-yellow-600">4</div>
+                        <div class="text-xs text-gray-500">他人分享的</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧内容区 -->
+        <div class="flex-1 overflow-y-auto bg-gray-50">
+            <!-- 新建申请书页 -->
+            <div class="px-6 py-8 bg-white border-b border-gray-100">
+                <div class="px-6 bg-white border-b border-gray-100">
+                    <!-- 优化说明文字 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">新建交底书</h3>
+                        <p class="text-gray-600 text-sm">请选择以下方式之一输入技术方案，AI将辅助生成符合技术交底书要求的文档。</p>
+                    </div>
+                    
+                    <!-- 改进的标签页设计 -->
+                    <div class="bg-white p-1 rounded-lg mb-6 inline-flex">
+                        <button id="textTab" class="tab-button tab-active flex items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200">
+                            <i class="ri-history-line mr-2"></i>
+                            <span>输入技术方案</span>
+                        </button>
+                        <button id="fileTab" class="tab-button flex items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200">
+                            <i class="ri-upload-2-line mr-2"></i>
+                            <span>上传技术方案</span>
+                        </button>
+                    </div>
+                
+                    <!-- 输入技术方案改进布局 -->
+                    <div id="disclosureList" class="space-y-3">
+                        <form id="disclosureForm" class="px-3">
+                            <!-- 发明名称 -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">发明名称（5-50字） <span class="text-red-500">*</span></label>
+                                <input type="text" id="inventionTitle" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="请输入一个简洁、准确地反映发明技术方案的名称，例如：一种基于深度学习的图像识别方法">
+                            </div>
+                            
+                            <div class="flex items-center mb-4 hidden">
+                                <span class="text-sm text-gray-600 mr-3">结构化输入</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="inputModeToggle" class="sr-only peer no-focus-styles" title="便于生成更高质量得交底书">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+
+                            <!-- 技术方案输入方式选择 -->
+                            <div id='inputEasy' class="mb-4 hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">技术方案（200-5000字）<span class="text-red-500">*</span></label>
+                                <textarea id="technicalSolutionFull" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" rows="15" placeholder="请详细描述本发明要解决的技术问题、对应的技术方案、达到的技术效果以及具体的实施例等，使技术人员能够理解并实现本发明。可以包括多个方案或实现方式。"></textarea>
+                            </div>
+                            <div id='inputHard' class="mb-4">
+                                <!-- 技术问题 -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">本发明解决的技术问题（50-500字） <span class="text-red-500">*</span></label>
+                                    <textarea id="technicalProblem" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" rows="4" placeholder="请清晰描述现有技术存在的问题和不足，说明这些问题对行业或用户造成的影响，以及为什么需要解决这些问题"></textarea>
+                                </div>
+                                
+                                <!-- 技术方案 -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">解决该技术问题的技术方案（100-10000字） <span class="text-red-500">*</span></label>
+                                    <textarea id="technicalSolution" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" rows="6" placeholder="请详细描述发明的技术方案，包括技术特征、步骤、结构等，尽可能完整地展示发明的核心内容，可以包括多个方案或实现方式"></textarea>
+                                </div>
+                                
+                                <!-- 技术效果 -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">本发明达到的技术效果（50-1000字） <span class="text-red-500">*</span></label>
+                                    <textarea id="technicalEffect" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" rows="4" placeholder="请描述采用本发明的技术方案能够达到的有益效果，如性能提升、成本降低、用户体验改善等，最好能够提供具体的数据或对比结果"></textarea>
+                                </div>
+                                
+                                <!-- 实施例 -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">本发明技术方案对应的实施例（0-20000字）</label>
+                                    <textarea id="implementation" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" rows="8" placeholder="请详细描述发明的具体实施方式，包括具体步骤、参数、结构等，使技术人员能够理解并实现本发明，可以包括多个实施例以覆盖不同的应用场景"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 文件上传区域 - 改进设计 -->
+                    <div id="uploadSection" class="hidden space-y-4 px-3">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-medium text-gray-700">
+                                    <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline transition-colors" onclick="downloadTemplate()">
+                                        <i class="ri-download-line mr-1"></i>下载模板
+                                    </a>
+                                </h4>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-area border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-300" id="upload-area">
+                            <div class="space-y-4">
+                                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                                    <i class="ri-upload-cloud-2-line text-2xl text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-900 mb-1">拖拽文件到此处或点击上传</h3>
+                                    <p class="text-gray-500 text-xs mb-4">支持 PDF、Word 格式，文件大小不超过 20MB</p>
+                                    <input type="file" id="file-input" class="hidden" accept=".pdf,.doc,.docx">
+                                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium" onclick="document.getElementById('file-input').click()">
+                                        <i class="ri-folder-open-line mr-2"></i>选择文件
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 文件列表 - 改进显示 -->
+                        <div id="file-list" class="hidden">
+                            <h4 class="text-sm font-medium text-gray-700 mb-3">已选择的文件</h4>
+                            <div id="file-items" class="space-y-2"></div>
+                        </div>
+                        
+                        <!-- 上传进度 - 改进显示 -->
+                        <div id="upload-progress" class="hidden bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-gray-700">上传进度</span>
+                                <span class="text-sm text-gray-600" id="progress-text">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full progress-bar transition-all duration-300" style="width: 0%" id="progress-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 底部操作区域 - 改进设计 -->
+                    <div class="mt-6 pt-4 border-t border-gray-200">
+                        <button class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group" id="create-btn">
+                            <i class="ri-magic-line mr-2 group-hover:animate-spin"></i>
+                            <span>生成交底书初稿</span>
+                            <i class="ri-arrow-right-line ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                        <!-- <p class="text-xs text-gray-500 text-center mt-2">请先选择一个交底书或上传文件</p> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 弹出分享界面，界面包含分享账号输入框，已分享账号列表，确认和取消按钮 -->
+        <div id="shareModal" class="fixed top-0 left-0 w-full h-full flex items-center justify-center hidden">
+            <div class="bg-white p-8 rounded-lg shadow-lg w-1/2">
+                <!-- <h2 class="text-lg font-medium mb-4">分享案件</h2> -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">分享给</label>
+                    <input type="text" id="shareAccount" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="请输入分享账号，多个账号用英文;隔开">
+                </div>
+                <!-- 已分享账号列表 -->
+                <div id="sharedAccountList" class="mt-4">
+                    <p class="text-sm text-gray-600">已分享账号：</p>
+                    <ul id="sharedAccountItems" class="mt-2">luojia@ourchem.com;40374503@qq.com</ul>
+                </div>
+                <div class="flex justify-end">
+                    <button id="shareCancelBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium mr-2">取消</button>
+                    <button id="shareConfirmBtn" onclick="shareConfirm()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const disclosureSection = document.getElementById('disclosureSection');
+        const disclosureList = document.getElementById('disclosureList');
+        const uploadSection = document.getElementById('uploadSection');
+        const createBtn = document.getElementById('create-btn');
+
+        // 侧边栏收缩功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const disclosureSection = document.getElementById('disclosureSection');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const sidebar = document.getElementById('sidebar');
+            //const icon = toggleBtn.querySelector('i');
+            let isCollapsed = false;
+            
+            // toggleBtn.addEventListener('click', function() {
+            //     if (isCollapsed) {
+            //         // 展开侧边栏
+            //         sidebar.classList.remove('w-16');
+            //         sidebar.classList.add('w-96');
+            //         sidebar.querySelectorAll('.sidebar-content').forEach(el => {
+            //             el.classList.remove('hidden');
+            //         });
+            //         icon.className = 'ri-sidebar-fold-line text-lg';
+            //         toggleBtn.title = '收缩侧边栏';
+            //         isCollapsed = false;
+            //         // 显示交底书列表
+            //         disclosureList.classList.remove('hidden');
+            //         disclosureSection.classList.remove('hidden');
+            //         uploadSection.classList.remove('hidden');
+            //     } else {
+            //         // 收缩侧边栏
+            //         sidebar.classList.remove('w-96');
+            //         sidebar.classList.add('w-16');
+            //         sidebar.querySelectorAll('.sidebar-content').forEach(el => {
+            //             el.classList.add('hidden');
+            //         });
+            //         icon.className = 'ri-sidebar-unfold-line text-lg';
+            //         toggleBtn.title = '展开侧边栏';
+            //         isCollapsed = true;
+            //         // 隐藏所有内容
+            //         disclosureSection.classList.add('hidden');
+            //         uploadSection.classList.add('hidden');
+            //         disclosureList.classList.add('hidden');
+            //     }
+            // });
+        });
+
+        // 切换下拉菜单显示状态
+        function toggleDropdown(button) {
+            const dropdown = button.nextElementSibling;
+            const allDropdowns = document.querySelectorAll('.absolute.right-0.top-full');
+            
+            // 关闭其他所有下拉菜单
+            allDropdowns.forEach(dd => {
+                if (dd !== dropdown) {
+                    dd.classList.add('hidden');
+                }
+            });
+            
+            // 切换当前下拉菜单
+            dropdown.classList.toggle('hidden');
+        }
+
+        // 点击页面其他地方时关闭下拉菜单
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.absolute.right-0.top-full');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.closest('.relative').contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+
+        // 下载文件函数
+        function downloadFile() {
+            console.log('下载文件');
+            // 在这里添加下载逻辑
+        }
+
+        // 转申请文件函数
+        function transformFile() {
+            window.open('../shenqingshu/editor.html?step=2', "_blank"); // 打开新窗口
+        }
+
+        // 分享文件函数
+        function shareFile() {
+            console.log('分享文件');
+            // 关闭下拉菜单
+            
+            // 弹出分享界面，界面包含分享账号输入框，已分享账号列表，确认和取消按钮
+            const shareModal = document.getElementById('shareModal');
+            shareModal.classList.remove('hidden');
+        }
+
+        // 分享确认函数
+        function shareConfirm() {
+            // 弹出已成功分享提示，关闭分享框
+            alert('已成功分享');
+            shareModal.classList.add('hidden');
+        }
+
+        // 删除文件函数
+        function deleteFile() {
+            console.log('删除文件');
+            // 在这里添加删除逻辑
+        }
+        
+        // 替换现有的标签页切换逻辑
+        document.getElementById('textTab').addEventListener('click', function() {
+            // 更新标签页状态
+            this.classList.add('tab-active');
+            document.getElementById('fileTab').classList.remove('tab-active');
+            
+            // 切换内容区域
+            document.getElementById('disclosureList').classList.remove('hidden');
+            document.getElementById('uploadSection').classList.add('hidden');
+            
+            // 重置按钮状态
+            updateCreateButtonState();
+        });
+
+        document.getElementById('fileTab').addEventListener('click', function() {
+            // 更新标签页状态
+            this.classList.add('tab-active');
+            document.getElementById('textTab').classList.remove('tab-active');
+            
+            // 切换内容区域
+            document.getElementById('disclosureList').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            
+            // 重置按钮状态
+            updateCreateButtonState();
+        });
+        
+        // 点击历史申请书列表
+        const historySection = document.getElementById('historySection');
+        const newApplicationSection = document.getElementById('newApplicationSection');
+        
+        // 显示申请书生成结果页面
+        function showApplicationResult(step) {
+            // 新打开editor.html页面，传递step参数
+            if (step === 1) {
+                window.open('editorView.html', '_blank');
+            }
+            else {
+                window.open('editor2.html', '_blank');
+            }
+        }
+
+        document.getElementById('inputModeToggle').addEventListener('change', function() {
+            if (this.checked) {
+                document.getElementById('inputEasy').classList.add('hidden');
+                document.getElementById('inputHard').classList.remove('hidden');
+            } else {
+                // 切换到“详细输入”
+                document.getElementById('inputEasy').classList.remove('hidden');
+                document.getElementById('inputHard').classList.add('hidden');
+            }
+            
+            // 更新按钮状态
+            updateCreateButtonState();
+        });
+
+        // 输入标题和技术方案时更新按钮状态
+        document.getElementById('inventionTitle').addEventListener('input', updateCreateButtonState);
+        //document.getElementById('technicalSolutionFull').addEventListener('input', updateCreateButtonState);
+        document.getElementById('file-input').addEventListener('change', updateCreateButtonState);
+
+        // 统一的按钮状态更新函数
+        function updateCreateButtonState() {
+            // const createBtn = document.getElementById('create-btn');
+            // const textTabActive = document.getElementById('textTab').classList.contains('tab-active');
+            // const fileTabActive = document.getElementById('fileTab').classList.contains('tab-active');
+            
+            // let canProceed = false;
+            
+            // // 获取输入标题和技术方案
+            // const inventionTitle = document.getElementById('inventionTitle').value.trim();
+            // const technicalSolutionFull = document.getElementById('technicalSolutionFull').value.trim();
+
+            // if (textTabActive && inventionTitle.length >=1) {
+            //     canProceed = true;
+            // } else if (fileTabActive && document.getElementById('file-items').children.length > 0) {
+            //     canProceed = true;
+            // }
+            
+            // createBtn.disabled = !canProceed;
+            // if (canProceed) {
+            //     createBtn.classList.remove('opacity-50');
+            // } else {
+            //     createBtn.classList.add('opacity-50');
+            // }
+
+            canProceed = true;
+            createBtn.classList.remove('opacity-50');
+        }
+        
+        // 文件上传处理
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        const fileItems = document.getElementById('file-items');
+        const uploadProgress = document.getElementById('upload-progress');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        // 拖拽上传
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+        
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+        
+        function handleFiles(files) {
+            for (let file of files) {
+                if (validateFile(file)) {
+                    displayFile(file);
+                    simulateUpload(file);
+                }
+            }
+        }
+        
+        function validateFile(file) {
+            const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            
+            if (!allowedTypes.includes(file.type)) {
+                alert('请上传 PDF 或 Word 格式的文件');
+                return false;
+            }
+            
+            if (file.size > maxSize) {
+                alert('文件大小不能超过 50MB');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // 改进的文件上传反馈
+        function displayFile(file) {
+            const fileItems = document.getElementById('file-items');
+            const fileList = document.getElementById('file-list');
+            
+            const fileItem = document.createElement('div');
+            fileItem.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200';
+            fileItem.innerHTML = `
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="ri-file-text-line text-blue-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">${file.name}</p>
+                        <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                </div>
+                <button class="text-red-500 hover:text-red-700 p-1" onclick="removeFile(this)">
+                    <i class="ri-close-line"></i>
+                </button>
+            `;
+            
+            fileItems.appendChild(fileItem);
+            fileList.classList.remove('hidden');
+            
+            // 更新按钮状态
+            updateCreateButtonState();
+        }
+
+        function removeFile(button) {
+            button.closest('.flex').remove();
+            
+            // 如果没有文件了，隐藏文件列表
+            const fileItems = document.getElementById('file-items');
+            if (fileItems.children.length === 0) {
+                document.getElementById('file-list').classList.add('hidden');
+            }
+            
+            // 更新按钮状态
+            updateCreateButtonState();
+        }
+      
+        function simulateUpload(file) {
+            uploadProgress.classList.remove('hidden');
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    
+                    // 启用创建按钮
+                    createBtn.disabled = false;
+                    createBtn.classList.remove('opacity-50');
+                    
+                    setTimeout(() => {
+                        uploadProgress.classList.add('hidden');
+                    }, 1000);
+                }
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = Math.round(progress) + '%';
+            }, 200);
+        }
+        
+        // 创建交底书书按钮
+        createBtn.addEventListener('click', function() {
+            if (!this.disabled) {
+                // 新打开editor.html页面
+                //window.open('editor2.html', '_blank');
+                window.location.href = 'editor2.html';
+            }
+        });
+
+        // 侧边栏收缩展开功能
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const toggleIcon = document.getElementById('toggleIcon');
+        let isCollapsed = false;
+
+        toggleSidebar.addEventListener('click', function() {
+            isCollapsed = !isCollapsed;
+            
+            if (isCollapsed) {
+                // 收缩状态
+                sidebar.classList.remove('w-96');
+                sidebar.classList.add('w-16');
+                toggleIcon.classList.remove('ri-arrow-left-s-line');
+                toggleIcon.classList.add('ri-arrow-right-s-line');
+                
+                // 隐藏文字内容
+                const textElements = sidebar.querySelectorAll('h2, p, input, textarea, button:not(#toggleSidebar), .text-xs, .text-sm');
+                textElements.forEach(el => {
+                    if (el.id !== 'toggleSidebar' && !el.closest('#toggleSidebar')) {
+                        el.style.display = 'none';
+                    }
+                });
+                
+                // 隐藏搜索框和列表内容
+                const hideElements = sidebar.querySelectorAll('.relative, .flex-1, .px-6:not(.border-b)');
+                hideElements.forEach(el => {
+                    if (!el.closest('.flex.items-center.justify-between')) {
+                        el.style.display = 'none';
+                    }
+                });
+            } else {
+                // 展开状态
+                sidebar.classList.remove('w-16');
+                sidebar.classList.add('w-96');
+                toggleIcon.classList.remove('ri-arrow-right-s-line');
+                toggleIcon.classList.add('ri-arrow-left-s-line');
+                
+                // 显示文字内容
+                const textElements = sidebar.querySelectorAll('h2, p, input, textarea, button:not(#toggleSidebar), .text-xs, .text-sm');
+                textElements.forEach(el => {
+                    el.style.display = '';
+                });
+                
+                // 显示搜索框和列表内容
+                const hideElements = sidebar.querySelectorAll('.relative, .flex-1, .px-6:not(.border-b)');
+                hideElements.forEach(el => {
+                    el.style.display = '';
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>

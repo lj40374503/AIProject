@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线编辑器 - AI专利申请文本生成工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入富文本编辑器 -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        .tab-active {
+            color: #0284c7;
+            border-bottom: 2px solid #0284c7;
+        }
+        .patent-item:hover {
+            background-color: #f0f9ff;
+        }
+        .patent-selected {
+            background-color: #e0f2fe;
+            border-left: 3px solid #0284c7;
+        }
+        .resizer {
+            width: 5px;
+            cursor: col-resize;
+            background-color: #e5e7eb;
+        }
+        .resizer:hover {
+            background-color: #d1d5db;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .message-user {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+        .message-ai {
+            background-color: #f0f9ff;
+            border: 1px solid #e0f2fe;
+        }
+        .ai-typing::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+        /* 滚动条样式 - 完全隐藏 */
+        .scrollbar-thin::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-thin {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .editor-container { height: 100%; }
+        .ql-container.ql-snow { height: calc(100% - 42px); }
+        .ql-editor { height: 100%; overflow-y: auto; font-size: 14px; line-height: 1.8; }
+        
+        @keyframes typing {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+        /* 全局滚动条样式 - 适用于所有元素 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 主要内容区域 -->
+    <main class="flex flex-col h-screen overflow-hidden">
+        <div class="flex-1 flex overflow-hidden">
+            <!-- 左侧文档结构导航 -->
+            <div id="tree" class="w-16 bg-white rounded-xl shadow-sm border border-gray-100 p-3 h-full">
+                <ul class="document-tree space-y-3">
+                    <!-- 新增：构建权利要求架构 -->
+                    <!-- <li class="group relative">
+                        <div class="flex items-center justify-center px-2 py-2 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 cursor-pointer hover:from-purple-100 hover:to-indigo-100 active:from-purple-200 active:to-indigo-200 transition-all duration-200 border border-purple-200" onclick="showClaimsBuilder()">
+                            <i class="ri-mind-map text-purple-600 text-lg"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                构建权利要求架构
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li> -->
+                    
+                    <!-- 分隔线 -->
+                    <!-- <li class="border-t border-gray-200 pt-3">
+                        <div class="w-full h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                    </li> -->
+                    
+                    <!-- 权利要求书 -->
+                    <li class="group relative">
+                        <div class="flex items-center justify-center px-2 py-2 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 cursor-pointer hover:from-blue-100 hover:to-cyan-100 active:from-blue-200 active:to-cyan-200 transition-all duration-200 border border-blue-200" onclick="showEditor('claims')">
+                            <i class="fas fa-gavel text-blue-600"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                权利要求书
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                    
+                    <!-- 说明书 -->
+                    <li class="group relative">
+                        <div class="flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-orange-300 text-orange-600 cursor-pointer hover:bg-orange-50 transition-all duration-200" onclick="showEditor('specification')">
+                            <i class="fas fa-book text-orange-600"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                说明书
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+
+                    <!-- 摘要 -->
+                    <li class="group relative">
+                        <div class="flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-green-300 text-green-600 cursor-pointer hover:bg-green-50 transition-all duration-200" onclick="showEditor('abstract')">
+                            <i class="fas fa-file-alt text-green-600"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                说明书摘要
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                    
+                    <!-- 说明书附图 -->
+                    <li class="group relative">
+                        <div class="flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-pink-300 text-pink-600 cursor-pointer hover:bg-pink-50 transition-all duration-200" onclick="showEditor('drawings')">
+                            <i class="ri-image-line text-pink-600 text-lg"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                说明书附图
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                    
+                    <!-- 摘要附图 -->
+                    <li class="group relative">
+                        <div class="flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-violet-300 text-violet-600 cursor-pointer hover:bg-violet-50 transition-all duration-200" onclick="showEditor('abstract-drawings')">
+                            <i class="ri-image-2-line text-violet-600 text-lg"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                摘要附图
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 权利要求架构页面 -->
+            <!-- <div id="claims-builder-container" class="flex-1" style="display: none;">
+                <iframe src="claims-builder3.html" 
+                        width="100%" 
+                        height="100%" 
+                        frameborder="0" 
+                        style="border: none; min-height: 600px;">
+                </iframe>
+            </div> -->
+
+            <!-- 中间编辑区域 -->
+            <div id="editor-container" class="flex-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                    <!-- 编辑器标题栏 -->
+                    <div class="border-b border-gray-100 px-4 py-2 flex items-center justify-between bg-gray-50">
+                        <div class="flex items-center space-x-3">
+                            <h3 id="editor-title" class="text-lg font-semibold text-gray-900">权利要求书</h3>
+                            <span class="text-xs text-gray-500">最后编辑: 2023-06-15 15:45</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <!-- 保存按钮 -->
+                            <div class="flex items-center space-x-3">
+                                <button id="reviewBtn" class="py-1.5 px-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition duration-200 flex items-center">
+                                    <i class="ri-file-word-line mr-1"></i> 保存
+                                </button>
+                                <button id="shareBtn" class="py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition duration-200 flex items-center">
+                                    <i class="ri-share-line mr-1"></i> 分享
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 富文本编辑器 -->
+                    <div class="editor-container flex-1">
+                        <!-- 单一的Quill编辑器实例 -->
+                        <div id="editor-instance"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间分隔线 -->
+            <div id="resizer" class="resizer"></div>
+
+            <!-- 右侧辅助面板 -->
+            <div id="right-panel" class="w-2/5 flex flex-col bg-white border-l">
+                <!-- 右侧助手区切换 -->
+                <!-- <div id="rightSectionTabs" class="border-b">
+                    <div class="flex">
+                        <button id="aiChatTab" class="tab-active px-4 py-3 text-sm font-medium flex items-center">
+                            <i class="ri-robot-line mr-1.5"></i> AI助手
+                        </button>
+                        <button id="evaluateTab" class="px-4 py-3 text-sm font-medium text-gray-500 flex items-center">
+                            <i class="ri-file-search-line mr-1.5"></i> 评估助手
+                        </button>
+                    </div>
+                </div> -->
+                
+                <!-- AI对话区 -->
+                <div id="aiChatSection" class="flex-1 flex flex-col h-full">                           
+                    <!-- AI对话内容区 -->
+                    <div class="flex-1 overflow-y-auto hide-scrollbar p-3">
+                        <div class="space-y-4">
+                            <!-- AI消息 -->
+                            <div class="flex items-start">
+                                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mr-2">
+                                    <i class="ri-robot-line text-primary-600"></i>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3 text-sm max-w-[85%]">
+                                    <p class="text-sm">您好！我是AI助手小奥，可以帮助您完善申请书内容。您可以向我咨询关于权利要求、技术背景、发明内容或实施例等相关问题，我会尽力提供专业的建议。</p>
+                                    <p class="text-sm mt-2">您也可以上传相关的技术文档或图片，我可以基于这些资料为您生成更准确的内容。</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 用户消息 -->
+                            <div class="flex items-start justify-end">
+                                <div class="bg-primary-50 rounded-lg p-3 text-sm max-w-[85%]">
+                                    <p>帮我扩展一下技术背景部分，增加一些关于多模态AI系统的内容。</p>
+                                </div>
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 ml-2">
+                                    <i class="ri-user-line text-gray-600"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- AI消息 -->
+                            <div class="flex items-start">
+                                <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mr-2">
+                                    <i class="ri-robot-line text-primary-600"></i>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3 text-sm max-w-[85%]">
+                                    <p>以下是关于多模态AI系统的补充内容：</p>
+                                    <p class="mt-2">多模态AI系统能够同时处理和理解文本、图像、音频等多种数据类型，代表了AI向更全面感知能力发展的趋势。DALL-E、Midjourney等文本到图像生成模型，以及能够理解图像内容并生成相关文本的系统，展现了多模态AI的强大潜力。</p>
+                                    <p class="mt-2">这些系统打破了传统AI只能处理单一数据类型的局限，为人机交互、内容创作、智能分析等领域带来了革命性变化。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI对话输入区 - 移动到底部 -->
+                    <div class="p-3 border-t mt-auto">
+                        <div class="relative">
+                            <textarea placeholder="输入您的指令..." class="w-full p-2 pr-8 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none" rows="5"></textarea>
+                            <div class="absolute left-2 bottom-2 flex items-center space-x-2">
+                                <button id="contextBtn" class="text-gray-500 hover:text-primary-600 transition-colors flex items-center text-xs">
+                                    <i class="ri-attachment-2 text-lg mr-1"></i> 文件
+                                </button>
+                                <button id="uploadFileBtn" class="text-gray-500 hover:text-primary-600 transition-colors flex items-center text-xs">
+                                    <i class="ri-image-add-line text-lg mr-1"></i> 图片
+                                </button>
+                            </div>
+                            <div class="absolute right-2 bottom-2 flex items-center space-x-2">
+                                <button class="text-primary-600 hover:text-primary-700">
+                                    <i class="ri-send-plane-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 评估比对区 -->
+                <div id="evaluateSection" class="flex-1 flex flex-col h-full hidden">              
+                    <!-- 查新引导区域 -->
+                    <div id="chaxinGuide" class="flex-1 flex flex-col items-center justify-center p-6 py-12">
+                        <div class="text-center max-w-md -mt-16">
+                            <i class="ri-search-line text-6xl text-primary-300 mb-6"></i>
+                            <h3 class="text-xl font-medium text-gray-800 mb-3">申请前评估</h3>
+                            <p class="text-gray-600 mb-6">您可进行以下评估项目：</p>
+                            
+                            <!-- 评估项目 -->
+                            <div class="flex justify-center gap-6 mb-8">
+                                <div class="text-center">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2 mx-auto">
+                                        <i class="ri-file-text-line text-blue-600 text-lg"></i>
+                                    </div>
+                                    <span class="text-xs text-gray-600">形式审查</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2 mx-auto">
+                                        <i class="ri-shield-check-line text-blue-600 text-lg"></i>
+                                    </div>
+                                    <span class="text-xs text-gray-600">非正常申请评估</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2 mx-auto">
+                                        <i class="ri-lightbulb-line text-blue-600 text-lg"></i>
+                                    </div>
+                                    <span class="text-xs text-gray-600">新创性评估</span>
+                                </div>
+                            </div>
+                            
+                            <button id="goToChaxinBtn" onclick="goToChaxin()" class="py-3 px-8 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition duration-200 flex items-center justify-center mx-auto">
+                                <i class="ri-arrow-right-line mr-2"></i> 开始评估
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 评估完成提示区域 (初始隐藏) -->
+                    <div id="chaxinComplete" class="flex-1 flex flex-col items-center justify-center p-6 py-12 hidden">
+                        <div class="text-center max-w-md -mt-16">
+                            <i class="ri-check-double-line text-6xl text-green-400 mb-8"></i>
+                            <h3 class="text-xl font-medium text-gray-800 mb-4">评估已完成？</h3>
+                            <p class="text-gray-600 mb-10">您可以刷新页面导入评估结果</p>
+                            <div class="flex flex-col space-y-3">
+                                <button id="refreshChaxinBtn" onclick="refreshChaxin()" class="py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition duration-200 flex items-center justify-center">
+                                    <i class="ri-refresh-line mr-2"></i> 刷新页面
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 评估内容区 (初始隐藏) -->
+                    <div id="chaxinContent" class="flex-1 flex flex-col h-full overflow-hidden hidden">
+                        <div class="bg-gray-100 p-3 border-b">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium">评估结果</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 relative">
+                                            <svg class="progress-ring w-8 h-8" viewBox="0 0 32 32">
+                                                <circle class="progress-ring-circle" stroke="#e5e7eb" stroke-width="3" fill="transparent" r="14" cx="16" cy="16"/>
+                                                <circle cl8ass="progress-ring-circle" stroke="#10b981" stroke-width="3" fill="transparent" r="14" cx="16" cy="16" stroke-dasharray="87.96" stroke-dashoffset="26.39"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-sm font-medium text-green-600 ml-1">70%</span>
+                                    </div>
+                                    <span class="text-sm font-medium text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">部分通过</span>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <!-- 评估类型选项卡 -->
+                        <div class="flex p-3 space-x-1  bg-white rounded-lg shadow-sm">
+                            <button class="flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-500 rounded-md transition-all duration-200" data-assessment="formal">
+                                <i class="ri-file-list-3-line mr-2"></i>
+                                形式审查
+                            </button>
+                            <button class="flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-md transition-all duration-200" data-assessment="abnormal">
+                                <i class="ri-shield-check-line mr-2"></i>
+                                非正常申请
+                            </button>
+                            <button class="flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-md transition-all duration-200" data-assessment="novelty">
+                                <i class="ri-search-line mr-2"></i>
+                                新创性评估
+                            </button>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-2 bg-white">
+                            <!-- 形式审查结果 -->
+                            <div id="formalAssessment" class="space-y-4">
+                                <!-- 总体状态 -->
+                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-medium text-blue-900">形式审查总体评估</h3>
+                                        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">部分通过</span>
+                                    </div>
+                                    <p class="text-sm text-blue-700">发现 3 个问题需要修改，其中 1 个严重问题，2 个一般问题</p>
+                                </div>
+                                
+                                <!-- 详细检查项目 -->
+                                <div class="space-y-3">
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-list-3-line mr-2 text-green-600"></i>
+                                                申请文件完整性
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 包含权利要求书、说明书、说明书摘要和必要的附图</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-layout-line mr-2 text-green-600"></i>
+                                                文件格式规范性
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 文件格式符合专利申请要求，页码、字体、行距等符合规定</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-list-ordered mr-2 text-green-600"></i>
+                                                权利要求书形式
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 权利要求书的撰写格式符合规定，包含前序部分和特征部分</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border border-red-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-text-line mr-2 text-red-600"></i>
+                                                说明书形式
+                                            </h4>
+                                            <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">不通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">✗ 说明书缺少具体实施方式部分的详细描述</p>
+                                        <div class="bg-red-50 border border-red-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-red-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-red-600">说明书第4节"具体实施方式"内容过于简单，未详细描述深度学习模型的具体结构</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('description', 4)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">补充说明书中具体实施方式部分，详细描述深度学习模型的网络结构、层数、激活函数、训练方法等技术细节</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-white border border-yellow-200 rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-article-line mr-2 text-yellow-600"></i>
+                                                权利要求撰写质量
+                                            </h4>
+                                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">部分通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mb-2">⚠ 权利要求1包含非必要特征，可能限制保护范围</p>
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-2 mb-2">
+                                            <p class="text-xs font-medium text-yellow-700 mb-1">问题定位：</p>
+                                            <p class="text-xs text-yellow-600">权利要求1中的"语义理解模块"和"响应生成模块"可能为非必要特征</p>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-1 flex items-center" onclick="locateIssue('claims', 1)">
+                                                <i class="ri-map-pin-line mr-1"></i>定位到问题位置
+                                            </button>
+                                        </div>
+                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-2">
+                                            <p class="text-xs font-medium text-blue-700 mb-1">修改建议：</p>
+                                            <p class="text-xs text-gray-700">建议将"语义理解模块"和"响应生成模块"移至从属权利要求中，以扩大主权利要求的保护范围</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 非正常申请评估（默认隐藏） -->
+                            <div id="abnormalAssessment" class="space-y-4 hidden">
+                                <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-medium text-green-900">非正常申请评估</h3>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">全部通过</span>
+                                    </div>
+                                    <p class="text-sm text-green-700">未发现非正常申请情形，符合专利申请要求</p>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-tools-line mr-2 text-green-600"></i>
+                                                实用性检查
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 发明具有明确的产业应用前景和实用价值</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-flask-line mr-2 text-green-600"></i>
+                                                自然规律符合性
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 技术方案符合自然规律，不存在违反科学原理的内容</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-file-copy-line mr-2 text-green-600"></i>
+                                                重复申请检查
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 未发现与申请人之前提交的申请存在明显重复</p>
+                                    </div>
+                                    
+                                    <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="text-sm font-medium flex items-center">
+                                                <i class="ri-settings-line mr-2 text-green-600"></i>
+                                                技术方案完整性
+                                            </h4>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">✓ 申请文件中包含明确的技术方案，具有技术特征</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 新创性评估（默认隐藏） -->
+                            <div id="noveltyAssessment" class="space-y-4 hidden">
+                                <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4">
+                                    <div class="flex space-x-2 mb-2">
+                                        <h3 class="font-medium text-orange-900">新创性评估</h3>
+                                        <button id="deepSearchBtn" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 rounded flex items-center">
+                                            <i class="ri-search-2-line mr-1"></i>深度查新
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-sm text-orange-700">发现 2 个创造性问题，建议进行深度查新分析</p>
+                                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">需要关注</span>
+                                    </div>
+                                </div>
+    
+                                <div class="bg-gray-50 rounded-md p-3">
+                                    <h5 class="text-xs font-medium mb-2">核心技术要素：</h5>
+                                    <div class="space-y-2 text-xs">
+                                        <div class="bg-blue-50 p-2 rounded border-l-2 border-blue-400">
+                                            <span class="font-medium text-blue-700">技术问题：</span>
+                                            <p class="mt-1 text-gray-700">本发明解决了现有技术中的图像处理效率低下和准确度不足的问题。</p>
+                                        </div>
+                                        <div class="bg-purple-50 p-2 rounded border-l-2 border-purple-400">
+                                            <span class="font-medium text-purple-700">区别技术特征（发明点）：</span>
+                                            <ul class="mt-1 text-gray-700 list-disc list-inside">
+                                                <li>采用改进的卷积神经网络结构进行图像特征提取</li>
+                                                <li>引入注意力机制优化特征权重分配</li>
+                                                <li>使用多尺度融合算法提高检测精度</li>
+                                            </ul>
+                                        </div>
+                                        <div class="bg-green-50 p-2 rounded border-l-2 border-green-400">
+                                            <span class="font-medium text-green-700">技术效果：</span>
+                                            <ul class="mt-1 text-gray-700 list-disc list-inside">
+                                                <li>图像处理速度提升40%</li>
+                                                <li>检测准确率提高至95%以上</li>
+                                                <li>降低了系统资源占用，适用于更多终端设备</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 新颖性分析 -->
+                                <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="text-sm font-medium flex items-center">
+                                            <i class="ri-star-line mr-2 text-blue-600"></i>
+                                            新颖性分析
+                                        </h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600 mb-3">✓ 未发现与本发明完全相同的现有技术</p>
+                                </div>
+                                
+                                <!-- 创造性分析 -->
+                                <div class="bg-white border border-yellow-200 rounded-lg p-3 shadow-sm">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="text-sm font-medium flex items-center">
+                                            <i class="ri-lightbulb-line mr-2 text-yellow-600"></i>
+                                            创造性分析
+                                        </h4>
+                                        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">需要关注</span>
+                                    </div>
+                                    
+                                    <div class="space-y-3">
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                            <div class="flex justify-between items-center mb-2">
+                                                <h5 class="text-xs font-medium text-yellow-800">对比文献 1</h5>
+                                                <span class="text-xs text-yellow-600">相似度: 75%</span>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mb-2">CN112345678A - 基于深度学习的语音识别方法</p>
+                                            <div class="text-xs">
+                                                <p class="mb-1"><span class="font-medium">相同点：</span>都采用深度学习进行语音识别</p>
+                                                <p class="mb-1"><span class="font-medium">不同点：</span>本发明增加了语义理解和响应生成模块</p>
+                                                <p class="text-yellow-700"><span class="font-medium">问题：</span>区别特征的技术效果不够突出</p>
+                                            </div>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-2 flex items-center" onclick="showPriorArt('CN112345678A')">
+                                                <i class="ri-external-link-line mr-1"></i>查看详细对比
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                                            <div class="flex justify-between items-center mb-2">
+                                                <h5 class="text-xs font-medium text-yellow-800">对比文献 2</h5>
+                                                <span class="text-xs text-yellow-600">相似度: 68%</span>
+                                            </div>
+                                            <p class="text-xs text-gray-600 mb-2">US20210123456A1 - Intelligent Speech Recognition System</p>
+                                            <div class="text-xs">
+                                                <p class="mb-1"><span class="font-medium">相同点：</span>都包含预处理和特征提取模块</p>
+                                                <p class="mb-1"><span class="font-medium">不同点：</span>本发明采用了不同的网络结构</p>
+                                                <p class="text-yellow-700"><span class="font-medium">问题：</span>网络结构的改进是否显而易见需要进一步分析</p>
+                                            </div>
+                                            <button class="text-xs text-blue-600 hover:text-blue-800 mt-2 flex items-center" onclick="showPriorArt('US20210123456A1')">
+                                                <i class="ri-external-link-line mr-1"></i>查看详细对比
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 border border-blue-200 rounded-md p-2 mt-3">
+                                        <p class="text-xs font-medium text-blue-700 mb-1">创造性评估建议：</p>
+                                        <p class="text-xs text-gray-700">建议在说明书中强调语义理解模块和响应生成模块的技术效果，并提供更多实验数据支撑其技术优势</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- 实用性分析 -->
+                                <div class="bg-white border rounded-lg p-3 shadow-sm">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h4 class="text-sm font-medium flex items-center">
+                                            <i class="ri-tools-fill mr-2 text-green-600"></i>
+                                            实用性分析
+                                        </h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">通过</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mb-2">✓ 本发明能够产生积极的技术效果，具有产业应用价值</p>
+                                    <div class="bg-green-50 rounded-md p-2">
+                                        <p class="text-xs text-green-700">技术效果：提高语音识别准确率，增强用户交互体验，具有明确的商业应用前景</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- AI评估总结 -->
+                            <div class="mt-6 bg-gradient-to-r from-gray-50 to-slate-50 border rounded-lg p-4">
+                                <h3 class="font-medium mb-3 flex items-center">
+                                    <i class="ri-robot-line mr-2 text-blue-600"></i>
+                                    AI智能评估总结
+                                </h3>
+                                <div class="space-y-2 text-sm text-gray-700">
+                                    <div class="flex items-start">
+                                        <i class="ri-checkbox-circle-line text-green-600 mr-2 mt-0.5"></i>
+                                        <span><span class="font-medium">形式审查：</span>基本符合要求，但说明书具体实施方式需要补充</span>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <i class="ri-checkbox-circle-line text-green-600 mr-2 mt-0.5"></i>
+                                        <span><span class="font-medium">非正常申请：</span>全部通过，不属于非正常专利申请</span>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <i class="ri-error-warning-line text-yellow-600 mr-2 mt-0.5"></i>
+                                        <span><span class="font-medium">新创性评估：</span>新颖性良好，但创造性需要进一步论证</span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                    <p class="text-sm font-medium text-blue-800 mb-1">总体建议：</p>
+                                    <p class="text-sm text-blue-700">建议优先修改说明书的具体实施方式部分，并加强权利要求的创造性论述。完成修改后，该专利申请有较高的授权可能性。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- AI助手图标 - 固定在页面底部 -->
+    <!-- <div class="fixed bottom-6 left-2 z-50">
+        <div class="group relative">
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white cursor-pointer hover:from-purple-600 hover:to-pink-600 active:from-purple-700 active:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105" onclick="openAIAssistant()">
+                <i class="fas fa-robot text-white text-xl"></i>
+                <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                    一键生成权利要求
+                    <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                </span>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- 页面脚本 -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 创建单一的Quill实例，绑定到一个专门的编辑器容器
+            const quill = new Quill('#editor-instance', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        ['clean']
+                    ]
+                },
+                placeholder: '开始编辑文档...',
+            });
+            
+            // 存储各个文档类型的内容
+            const documentContents = {
+                'claims': `<p>1. 一种智能语音识别方法，其特征在于，包括以下步骤：</p>
+<p class="ql-indent-1">S1：获取用户的语音输入信号；</p>
+<p class="ql-indent-1">S2：对所述语音输入信号进行预处理，包括降噪和特征提取；</p>
+<p class="ql-indent-1">S3：利用深度学习模型对预处理后的语音信号进行识别，得到识别结果；</p>
+<p class="ql-indent-1">S4：根据所述识别结果执行相应的操作。</p>
+<p>2. 根据权利要求1所述的智能语音识别方法，其特征在于，所述深度学习模型采用循环神经网络结构，包括长短期记忆网络LSTM和门控循环单元GRU中的至少一种。</p>
+<p>3. 根据权利要求1所述的智能语音识别方法，其特征在于，所述预处理步骤还包括语音端点检测，用于确定语音信号的起始点和结束点。</p>`,
+                'specification': `<h3>技术领域</h3>
+<p>本发明涉及语音识别技术领域，特别是涉及一种基于深度学习的智能语音识别方法及装置。</p>
+<h3>背景技术</h3>
+<p>随着人工智能技术的快速发展，语音识别技术在智能家居、车载系统、移动设备等领域得到了广泛应用。传统的语音识别方法主要基于隐马尔可夫模型（HMM）和高斯混合模型（GMM），但在复杂噪声环境下识别准确率较低。</p>
+<h3>发明内容</h3>
+<p>本发明的目的在于提供一种智能语音识别方法，以解决现有技术中语音识别准确率低、抗噪能力差的问题。</p>
+<p>为实现上述目的，本发明提供了一种智能语音识别方法，包括以下步骤：</p>
+<p>S1：获取用户的语音输入信号；</p>
+<p>S2：对所述语音输入信号进行预处理，包括降噪和特征提取；</p>
+<p>S3：利用深度学习模型对预处理后的语音信号进行识别，得到识别结果；</p>
+<p>S4：根据所述识别结果执行相应的操作。</p>`,
+                        'abstract': `<p>本发明公开了一种智能语音识别方法及装置。该方法包括：获取用户的语音输入信号；对语音输入信号进行预处理，包括降噪和特征提取；利用深度学习模型对预处理后的语音信号进行识别，得到识别结果；根据识别结果执行相应的操作。本发明采用深度学习技术，能够有效提高语音识别的准确率，增强系统的抗噪能力，适用于各种复杂的语音环境。</p>`,
+                        'drawings': `<p>图1</p>
+<p>图2</p>
+<p>图3</p>
+<p>图4</p>`,
+                        'abstract-drawings': `<p></p>`
+            };
+            
+            // 当前编辑的文档类型
+            let currentDocumentType = 'claims';
+            
+            // 打开页面提示是否AI辅助生成权利要求书
+            // if(confirm('AI助手将辅助生成权利要求书！')){
+            //     // 加载权利要求书内容
+            //     loadContent('claims');
+            // }
+
+            // 保存当前内容到存储中
+            function saveCurrentContent() {
+                if (currentDocumentType) {
+                    documentContents[currentDocumentType] = quill.root.innerHTML;
+                }
+            }
+            
+            // 加载指定类型的内容
+            function loadContent(type) {
+                // 只有当currentDocumentType不为空且不等于要加载的类型时才保存
+                if (currentDocumentType && currentDocumentType !== type) {
+                    saveCurrentContent(); // 先保存当前内容
+                }
+                currentDocumentType = type;
+                quill.root.innerHTML = documentContents[type] || '';
+            }
+            
+            // 修改showEditor函数以使用新的内容切换逻辑
+            window.loadContent = loadContent;
+            
+            // 初始化显示权利要求书
+            //loadContent('claims');
+
+            // 获取网址打开传入的参数
+            const step = new URLSearchParams(window.location.search).get('step');
+            if(step === '1'){
+                showClaimsBuilder();
+            }
+            else {
+                showEditor('claims');
+            }
+
+            // 切换AI助手与评估助手
+            // document.getElementById('aiChatTab').addEventListener('click', function() {
+            //     document.getElementById('aiChatTab').classList.add('tab-active');
+            //     document.getElementById('evaluateTab').classList.remove('tab-active');
+            //     document.getElementById('aiChatSection').classList.remove('hidden');
+            //     document.getElementById('evaluateSection').classList.add('hidden');
+            // })
+
+            // document.getElementById('evaluateTab').addEventListener('click', function() {
+            //     document.getElementById('aiChatTab').classList.remove('tab-active');
+            //     document.getElementById('evaluateTab').classList.add('tab-active');
+            //     document.getElementById('aiChatSection').classList.add('hidden');
+            //     document.getElementById('evaluateSection').classList.remove('hidden');
+            // })
+            
+            const resizer = document.getElementById('resizer');
+            const leftPanel = resizer.previousElementSibling;
+            const rightPanel = resizer.nextElementSibling;
+            let isResizing = false;
+            let startX;
+            let startWidth;
+
+            resizer.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                startX = e.pageX;
+                startWidth = leftPanel.offsetWidth;
+                resizer.classList.add('dragging');
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                
+                const container = document.querySelector('.flex-1.flex.overflow-hidden');
+                const containerRect = container.getBoundingClientRect();
+                const containerWidth = containerRect.width;
+                
+                // 计算左侧区域宽度百分比
+                const leftWidthPercent = ((e.clientX - containerRect.left) / containerWidth) * 100;
+                
+                // 限制最小宽度
+                if (leftWidthPercent < 30 || leftWidthPercent > 70) return;
+                
+                // 设置左右两侧区域宽度
+                leftPanel.style.width = `${leftWidthPercent}%`;
+                rightPanel.style.width = `${100 - leftWidthPercent}%`;
+            });
+
+            document.addEventListener('mouseup', function() {
+                isResizing = false;
+                resizer.classList.remove('dragging');
+            });
+        });
+
+        // 显示权利要求架构页面
+        function showClaimsBuilder() {
+            // 隐藏编辑器容器、分隔线和右侧面板
+            document.getElementById('editor-container').style.display = 'none';
+            document.getElementById('resizer').style.display = 'none';
+            document.getElementById('right-panel').style.display = 'none';
+            
+            // 显示权利要求架构容器
+            document.getElementById('claims-builder-container').style.display = 'block';
+            
+            // 更新导航状态
+            updateNavState('claims-builder');
+        }
+        
+        // 显示编辑器页面
+        function showEditor(type) {
+            // 隐藏权利要求架构页面
+            //document.getElementById('claims-builder-container').style.display = 'none';
+            
+            // 显示编辑器区域
+            document.getElementById('editor-container').style.display = 'block';
+            document.getElementById('resizer').style.display = 'block';
+            document.getElementById('right-panel').style.display = 'flex';
+            
+            // 切换编辑器内容
+            const contentMap = {
+                'claims': 'claims',
+                'specification': 'specification', 
+                'abstract': 'abstract',
+                'drawings': 'drawings',
+                'abstract-drawings': 'abstract-drawings'
+            };
+            
+            const titleMap = {
+                'claims': '权利要求书',
+                'specification': '说明书',
+                'abstract': '说明书摘要', 
+                'drawings': '说明书附图',
+                'abstract-drawings': '摘要附图'
+            };
+            
+            const contentType = contentMap[type];
+            if (contentType && window.loadContent) {
+                window.loadContent(contentType);
+            }
+            
+            // 更新标题
+            const titleElement = document.getElementById('editor-title');
+            if (titleElement) {
+                titleElement.textContent = titleMap[type] || '文档编辑';
+            }
+            
+            // 更新导航状态
+            updateNavState(type);
+        }
+
+        function goToChaxin() {
+            window.open('../zhijian/evaluate.html', '_blank');
+
+            // 隐藏查新引导区域
+            document.getElementById('chaxinGuide').classList.add('hidden');
+
+            // 显示查新完成提示区域
+            document.getElementById('chaxinComplete').classList.remove('hidden');
+        }
+
+        function refreshChaxin() {
+            // 隐藏查新完成提示区域
+            document.getElementById('chaxinComplete').classList.add('hidden');
+
+            // 显示查新内容区域
+            document.getElementById('chaxinContent').classList.remove('hidden');
+        }
+        
+        // 更新导航状态
+        function updateNavState(activeType) {
+            // 移除所有激活状态
+            const navItems = document.querySelectorAll('.document-tree li > div');
+            navItems.forEach(item => {
+                item.classList.remove('bg-gradient-to-r', 'from-purple-100', 'to-indigo-100', 'from-blue-100', 'to-cyan-100', 'from-orange-100', 'to-amber-100', 'from-green-100', 'to-emerald-100', 'from-pink-100', 'to-rose-100', 'from-violet-100', 'to-purple-100');
+            });
+            
+            // 根据类型添加激活状态
+            const activeMap = {
+                'claims-builder': 0,
+                'claims': 0,
+                'specification': 1,
+                'abstract': 2,
+                'drawings': 3,
+                'abstract-drawings': 4
+            };
+            
+            const index = activeMap[activeType];
+            if (index !== undefined) {
+                const activeItem = navItems[index];
+                if (activeItem) {
+                    if (activeType === 'claims-builder') {
+                        activeItem.classList.add('bg-gradient-to-r', 'from-purple-100', 'to-indigo-100');
+                    } else if (activeType === 'claims') {
+                        activeItem.classList.add('bg-gradient-to-r', 'from-blue-100', 'to-cyan-100');
+                    } else if (activeType === 'specification') {
+                        activeItem.classList.add('bg-gradient-to-r', 'from-orange-100', 'to-amber-100');
+                    } else if (activeType === 'abstract') {
+                        activeItem.classList.add('bg-gradient-to-r', 'from-green-100', 'to-emerald-100');
+                    } else if (activeType === 'drawings') {
+                        activeItem.classList.add('bg-gradient-to-r', 'from-pink-100', 'to-rose-100');
+                    } else if (activeType === 'abstract-drawings') {
+                        activeItem.classList.add('bg-gradient-to-r', 'from-violet-100', 'to-purple-100');
+                    }
+                }
+            }
+        }
+        
+    </script>
+</body>
+</html>

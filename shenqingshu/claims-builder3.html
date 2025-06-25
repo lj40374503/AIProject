@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权利要求树构建器</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .tree-node {
+            position: relative;
+        }
+        .tree-line {
+            position: absolute;
+            border-left: 2px solid #e5e7eb;
+        }
+        .tree-connector {
+            position: absolute;
+            border-top: 2px solid #e5e7eb;
+            border-left: 2px solid #e5e7eb;
+        }
+        .claim-card {
+            transition: all 0.2s ease;
+        }
+        .claim-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .feature-tag {
+            transition: all 0.2s ease;
+        }
+        .feature-tag:hover {
+            transform: scale(1.05);
+        }
+        .drag-over {
+            border: 2px dashed #3b82f6;
+            background-color: #eff6ff;
+        }
+        .dragging {
+            opacity: 0.5;
+        }
+        .editable {
+            border: 1px dashed #d1d5db;
+            min-height: 20px;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .editable:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        .modal {
+            display: none;
+        }
+        .modal.show {
+            display: flex;
+        }
+        /* 统一按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .btn-tertiary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-tertiary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        /* 统一特征标签样式 */
+        .feature-item {
+            background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 6px 10px;
+            transition: all 0.2s ease;
+        }
+        .feature-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 1px 4px rgba(107, 114, 128, 0.1);
+        }
+        .feature-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+        }
+        /* 权利义务层级样式 */
+        .claim-level-1 {
+            margin-left: 0;
+        }
+        .claim-level-2 {
+            margin-left: 40px;
+            position: relative;
+        }
+        .claim-level-3 {
+            margin-left: 80px;
+            position: relative;
+        }
+        .claim-level-2::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        .claim-level-2::after {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 24px;
+            width: 16px;
+            height: 2px;
+            background: #e5e7eb;
+        }
+        .claim-level-3::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e5e7eb;
+        }
+        .claim-level-3::after {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 24px;
+            width: 16px;
+            height: 2px;
+            background: #e5e7eb;
+        }
+        /* 星号设置样式 */
+        .star-icon {
+            transition: all 0.2s ease;
+        }
+        .star-icon:hover {
+            transform: scale(1.2);
+        }
+        .star-icon.active {
+            color: #f59e0b !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <!-- 左侧技术特征面板 -->
+        <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+            <!-- 必要技术特征 -->
+            <div class="mb-6 border border-gray-200 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            必要技术特征
+                        </h2>
+                    </div>
+                    <button id="addFeatureBtn" class="btn-secondary btn-small">
+                        <i class="ri-add-line"></i>
+                        添加特征
+                    </button>
+                </div>
+                <div id="featureList" class="bg-gray-50 rounded-lg p-3 min-h-[80px] border-2 border-dashed border-gray-300 mb-3">
+                    <div class="space-y-2" id="essentialFeatures">
+                        <div class="feature-tag bg-yellow-50 border border-yellow-200 rounded-lg p-2 cursor-move flex items-center justify-between" 
+                             draggable="true" data-feature="多通道麦克风阵列">
+                            <span class="text-xs font-medium text-yellow-800">多通道麦克风阵列</span>
+                            <div class="flex items-center">
+                                <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500 feature-distinctive" title="设置发明点" onclick="toggleStar(this)">
+                                    <i class="ri-star-fill"></i>
+                                </span>
+                                <button class="remove-diff-btn ml-2 text-red-500 hover:text-red-700 flex-shrink-0" data-content="多通道麦克风阵列" data-type="feature">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="feature-tag bg-yellow-50 border border-yellow-200 rounded-lg p-2 cursor-move flex items-center justify-between" 
+                             draggable="true" data-feature="噪声抑制算法">
+                            <span class="text-xs font-medium text-yellow-800">噪声抑制算法</span>
+                            <div class="flex items-center">
+                                <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500 feature-distinctive" title="设置发明点" onclick="toggleStar(this)">
+                                    <i class="ri-star-fill"></i>
+                                </span>
+                                <button class="remove-diff-btn ml-2 text-red-500 hover:text-red-700 flex-shrink-0" data-content="噪声抑制算法" data-type="feature">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="feature-tag bg-yellow-50 border border-yellow-200 rounded-lg p-2 cursor-move flex items-center justify-between" 
+                             draggable="true" data-feature="Transformer架构声学模型">
+                            <span class="text-xs font-medium text-yellow-800">Transformer架构声学模型</span>
+                            <div class="flex items-center">
+                                <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500 feature-distinctive" title="设置发明点" onclick="toggleStar(this)">
+                                    <i class="ri-star-fill"></i>
+                                </span>
+                                <button class="remove-diff-btn ml-2 text-red-500 hover:text-red-700 flex-shrink-0" data-content="Transformer架构声学模型" data-type="feature">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="feature-tag bg-yellow-50 border border-yellow-200 rounded-lg p-2 cursor-move flex items-center justify-between" 
+                             draggable="true" data-feature="多方言适应性训练">
+                            <span class="text-xs font-medium text-yellow-800">多方言适应性训练</span>
+                            <div class="flex items-center">
+                                <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500 feature-distinctive" title="设置发明点" onclick="toggleStar(this)">
+                                    <i class="ri-star-fill"></i>
+                                </span>
+                                <button class="remove-diff-btn ml-2 text-red-500 hover:text-red-700 flex-shrink-0" data-content="多方言适应性训练" data-type="feature">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧权利要求树 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 顶部工具栏 -->
+            <div class="bg-white border-b border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900">权利要求树</h1>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button class="btn-primary" onclick="autoGenerateClaims()">
+                            <i class="ri-magic-line"></i>自动生成
+                        </button>
+                        <button class="btn-secondary" onclick="addNewClaim()">
+                            <i class="ri-add-line"></i>添加权利要求
+                        </button>
+                        <button class="btn-tertiary" onclick="exportClaims()">
+                            <i class="ri-download-line"></i>导出
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 权利要求树区域 -->
+            <div class="flex-1 p-6 overflow-y-auto" id="claimsTree">
+                <!-- 独立权利要求1 -->
+                <div class="claim-node mb-8 claim-level-1" data-claim-id="1" data-claim-type="independent">
+                    <div class="claim-card bg-white rounded-lg border-2 border-blue-200 shadow-sm p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                                    1
+                                </span>
+                                <span class="text-sm font-medium text-gray-900 ml-2">独立权利要求</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="text-gray-400 hover:text-gray-600" onclick="toggleClaimExpand(1)">
+                                    <i class="ri-arrow-down-s-line" id="expand-icon-1"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-red-600" onclick="deleteClaim(1)">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="claim-content" id="claim-content-1">
+                            <div class="text-sm text-gray-700 mb-3">
+                                <span class="font-medium">一种基于深度学习的智能语音识别系统，其特征，包括：</span>
+                            </div>
+                            
+                            <div class="features-container space-y-2" ondrop="dropFeature(event, 1)" ondragover="allowDrop(event)">
+                                <div class="feature-item flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">多通道麦克风阵列，用于采集多方向音频信号</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                                            <i class="ri-star-fill"></i>
+                                        </span>
+                                        <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                                            <i class="ri-close-line text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="feature-item flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">噪声抑制算法，用于过滤环境噪声</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                                            <i class="ri-star-fill"></i>
+                                        </span>
+                                        <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                                            <i class="ri-close-line text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="feature-item flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">基于Transformer架构的声学模型</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                                            <i class="ri-star-fill"></i>
+                                        </span>
+                                        <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                                            <i class="ri-close-line text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="drop-zone border-2 border-dashed border-gray-300 rounded p-3 text-center text-gray-500 text-sm">
+                                    拖拽技术特征到此处添加
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 从属权利要求 -->
+                    <div class="dependent-claims mt-4 space-y-4">
+                        <!-- 从属权利要求2 -->
+                        <div class="claim-node claim-level-2" data-claim-id="2" data-claim-type="dependent" data-parent="1">
+                            <div class="claim-card bg-white rounded-lg border border-green-200 shadow-sm p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center">
+                                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                                            2
+                                        </span>
+                                        <span class="text-sm font-medium text-gray-900 ml-2">从属权利要求</span>
+                                        <select class="ml-2 text-xs text-gray-600 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500" onchange="updateClaimReference(2, this.value)">
+                                            <option value="1" selected>依赖于权利要求1</option>
+                                            <option value="">选择依赖的权利要求</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <button class="text-gray-400 hover:text-gray-600" onclick="toggleClaimExpand(2)">
+                                            <i class="ri-arrow-down-s-line" id="expand-icon-2"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" onclick="deleteClaim(2)">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="claim-content">
+                                    <div class="text-sm text-gray-700 mb-3">
+                                        <span class="font-medium">参照1所述的智能语音识别系统，其特征：</span>
+                                    </div>
+                                    
+                                    <div class="features-container space-y-2" ondrop="dropFeature(event, 2)" ondragover="allowDrop(event)">
+                                        <div class="feature-item flex items-center justify-between">
+                                            <span class="text-sm text-amber-800">描述声学模型采用轻量化神经网络结构</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                                                    <i class="ri-star-fill"></i>
+                                                </span>
+                                                <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                                                    <i class="ri-close-line text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="drop-zone border-2 border-dashed border-gray-300 rounded p-3 text-center text-gray-500 text-sm">
+                                            拖拽技术特征到此处添加
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 从属权利要求3 -->
+                        <div class="claim-node claim-level-2" data-claim-id="3" data-claim-type="dependent" data-parent="1">
+                            <div class="claim-card bg-white rounded-lg border border-green-200 shadow-sm p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center">
+                                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                                            3
+                                        </span>
+                                        <span class="text-sm font-medium text-gray-900 ml-2">从属权利要求</span>
+                                        <select class="ml-2 text-xs text-gray-600 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500" onchange="updateClaimReference(3, this.value)">
+                                            <option value="1" selected>依赖于权利要求1</option>
+                                            <option value="2">依赖于权利要求2</option>
+                                            <option value="">选择依赖的权利要求</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <button class="text-gray-400 hover:text-gray-600" onclick="toggleClaimExpand(3)">
+                                            <i class="ri-arrow-down-s-line" id="expand-icon-3"></i>
+                                        </button>
+                                        <button class="text-gray-400 hover:text-red-600" onclick="deleteClaim(3)">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="claim-content">
+                                    <div class="text-sm text-gray-700 mb-3">
+                                        <span class="font-medium">参照1所述的智能语音识别系统，其特征：</span>
+                                    </div>
+                                    
+                                    <div class="features-container space-y-2" ondrop="dropFeature(event, 3)" ondragover="allowDrop(event)">
+                                        <div class="feature-item flex items-center justify-between">
+                                            <span class="text-sm text-amber-800">还包括专业术语识别增强模块</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                                                    <i class="ri-star-fill"></i>
+                                                </span>
+                                                <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                                                    <i class="ri-close-line text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="drop-zone border-2 border-dashed border-gray-300 rounded p-3 text-center text-gray-500 text-sm">
+                                            拖拽技术特征到此处添加
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 三级从属权利要求示例 -->
+                            <div class="dependent-claims mt-4">
+                                <div class="claim-node claim-level-3" data-claim-id="4" data-claim-type="dependent" data-parent="3">
+                                    <div class="claim-card bg-white rounded-lg border border-purple-200 shadow-sm p-4">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center">
+                                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded mr-2">
+                                                    4
+                                                </span>
+                                                <span class="text-sm font-medium text-gray-900 ml-2">从属权利要求</span>
+                                                <select class="ml-2 text-xs text-gray-600 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500" onchange="updateClaimReference(4, this.value)">
+                                                    <option value="3" selected>依赖于权利要求3</option>
+                                                    <option value="1">依赖于权利要求1</option>
+                                                    <option value="2">依赖于权利要求2</option>
+                                                    <option value="">选择依赖的权利要求</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <button class="text-gray-400 hover:text-gray-600" onclick="toggleClaimExpand(4)">
+                                                    <i class="ri-arrow-down-s-line" id="expand-icon-4"></i>
+                                                </button>
+                                                <button class="text-gray-400 hover:text-red-600" onclick="deleteClaim(4)">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="claim-content">
+                                            <div class="text-sm text-gray-700 mb-3">
+                                                <span class="font-medium">参照3所述的智能语音识别系统，其特征：</span>
+                                            </div>
+                                            
+                                            <div class="features-container space-y-2" ondrop="dropFeature(event, 4)" ondragover="allowDrop(event)">
+                                                <div class="feature-item flex items-center justify-between">
+                                                    <span class="text-sm text-amber-800">描述专业术语识别增强模块采用领域自适应训练</span>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                                                            <i class="ri-star-fill"></i>
+                                                        </span>
+                                                        <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                                                            <i class="ri-close-line text-xs"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="drop-zone border-2 border-dashed border-gray-300 rounded p-3 text-center text-gray-500 text-sm">
+                                                    拖拽技术特征到此处添加
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentEditingClaim = null;
+        let claimCounter = 4;
+        
+        // 权利要求展开/折叠功能
+        function toggleClaimExpand(claimId) {
+            const claimCard = document.querySelector(`[data-claim-id="${claimId}"]`);
+            const expandIcon = document.getElementById(`expand-icon-${claimId}`);
+            const claimContent = claimCard.querySelector('.claim-content');
+            
+            if (claimContent) {
+                const isExpanded = claimContent.style.display !== 'none';
+                
+                if (isExpanded) {
+                    // 折叠
+                    claimContent.style.display = 'none';
+                    expandIcon.className = 'ri-arrow-right-s-line';
+                } else {
+                    // 展开
+                    claimContent.style.display = 'block';
+                    expandIcon.className = 'ri-arrow-down-s-line';
+                }
+            }
+        }
+
+        // 切换星号状态
+        function toggleStar(element) {
+            element.classList.toggle('active');
+        }
+        
+        // 切换权利要求星号
+        function toggleClaimStar(element, claimId) {
+            element.classList.toggle('active');
+            console.log(`权利要求 ${claimId} 重要性状态已切换`);
+        }
+        
+        // 切换特征星号
+        function toggleFeatureStar(element) {
+            element.classList.toggle('active');
+            console.log('特征发明点状态已切换');
+        }
+        
+        // 更新权利义务引用关系
+        function updateClaimReference(claimId, parentId) {
+            const claimNode = document.querySelector(`[data-claim-id="${claimId}"]`);
+            if (claimNode) {
+                claimNode.dataset.parent = parentId;
+                console.log(`权利义务 ${claimId} 现在依赖于权利义务 ${parentId}`);
+                
+                // 重新计算层级关系
+                updateClaimHierarchy();
+            }
+        }
+        
+        // 更新权利义务层级关系
+        function updateClaimHierarchy() {
+            const claims = document.querySelectorAll('.claim-node');
+            
+            claims.forEach(claim => {
+                const claimId = claim.dataset.claimId;
+                const parentId = claim.dataset.parent;
+                const claimType = claim.dataset.claimType;
+                
+                // 移除现有层级类
+                claim.classList.remove('claim-level-1', 'claim-level-2', 'claim-level-3');
+                
+                if (claimType === 'independent') {
+                    claim.classList.add('claim-level-1');
+                } else {
+                    // 计算层级深度
+                    const depth = getClaimDepth(claimId, claims);
+                    claim.classList.add(`claim-level-${Math.min(depth, 3)}`);
+                }
+            });
+        }
+        
+        // 获取权利义务深度
+        function getClaimDepth(claimId, claims, visited = new Set()) {
+            if (visited.has(claimId)) return 1; // 防止循环引用
+            visited.add(claimId);
+            
+            const claim = Array.from(claims).find(c => c.dataset.claimId === claimId);
+            if (!claim || claim.dataset.claimType === 'independent') {
+                return 1;
+            }
+            
+            const parentId = claim.dataset.parent;
+            if (!parentId) return 2;
+            
+            return getClaimDepth(parentId, claims, visited) + 1;
+        }
+
+        // 拖拽功能
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+        
+        function dropFeature(ev, claimId) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            
+            const feature = ev.dataTransfer.getData('text/plain');
+            if (feature) {
+                addFeatureToClaim(claimId, feature);
+            }
+        }
+        
+        // 设置拖拽数据
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.classList.contains('feature-tag')) {
+                e.dataTransfer.setData('text/plain', e.target.dataset.feature);
+                e.target.classList.add('dragging');
+            }
+        });
+        
+        document.addEventListener('dragend', function(e) {
+            if (e.target.classList.contains('feature-tag')) {
+                e.target.classList.remove('dragging');
+            }
+            // 移除所有拖拽样式
+            document.querySelectorAll('.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+        });
+        
+        // 添加特征到权利义务
+        function addFeatureToClaim(claimId, featureText) {
+            const claimNode = document.querySelector(`[data-claim-id="${claimId}"]`);
+            const featuresContainer = claimNode.querySelector('.features-container');
+            const dropZone = featuresContainer.querySelector('.drop-zone');
+            
+            const featureDiv = document.createElement('div');
+            featureDiv.className = 'feature-item flex items-center justify-between';
+            featureDiv.innerHTML = `
+                <span class="text-sm text-amber-800">${featureText}</span>
+                <div class="flex items-center gap-2">
+                    <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置发明点" onclick="toggleFeatureStar(this)">
+                        <i class="ri-star-fill"></i>
+                    </span>
+                    <button class="text-red-500 hover:text-red-600" onclick="removeFeature(this)">
+                        <i class="ri-close-line text-xs"></i>
+                    </button>
+                </div>
+            `;
+            
+            featuresContainer.insertBefore(featureDiv, dropZone);
+        }
+        
+        // 移除特征
+        function removeFeature(button) {
+            button.closest('.feature-item').remove();
+        }
+        
+        // 自动生成权利义务
+        function autoGenerateClaims() {
+            alert('自动生成功能将基于必要技术特征和发明点智能构建权利义务树');
+        }
+        
+        // 添加新权利义务
+        function addNewClaim() {
+            claimCounter++;
+            const claimsTree = document.getElementById('claimsTree');
+            
+            const newClaimHtml = `
+                <div class="claim-node mb-8 claim-level-1" data-claim-id="${claimCounter}" data-claim-type="independent">
+                    <div class="claim-card bg-white rounded-lg border-2 border-blue-200 shadow-sm p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded flex items-center gap-2">
+                                    独立权利要求 ${claimCounter}
+                                    <span class="star-icon cursor-pointer text-gray-400 hover:text-yellow-500" title="设置重要权利义务" onclick="toggleClaimStar(this, ${claimCounter})">
+                                        <i class="ri-star-fill"></i>
+                                    </span>
+                                </span>
+                                <button class="ml-2 text-gray-400 hover:text-gray-600" onclick="toggleClaimExpand(${claimCounter})">
+                                    <i class="ri-arrow-down-s-line" id="expand-icon-${claimCounter}"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button class="text-gray-400 hover:text-red-600" onclick="deleteClaim(${claimCounter})">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="claim-content" id="claim-content-${claimCounter}">
+                            <div class="text-sm text-gray-700 mb-3">
+                                <span class="font-medium">新的权利义务，其特征：</span>
+                            </div>
+                            
+                            <div class="features-container space-y-2" ondrop="dropFeature(event, ${claimCounter})" ondragover="allowDrop(event)">
+                                <div class="drop-zone border-2 border-dashed border-gray-300 rounded p-3 text-center text-gray-500 text-sm">
+                                    拖拽技术特征到此处添加
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            claimsTree.insertAdjacentHTML('beforeend', newClaimHtml);
+        }
+        
+        // 删除权利义务
+        function deleteClaim(claimId) {
+            if (confirm('确定要删除这个权利义务吗？')) {
+                const claimNode = document.querySelector(`[data-claim-id="${claimId}"]`);
+                claimNode.remove();
+                
+                // 更新层级关系
+                updateClaimHierarchy();
+            }
+        }
+        
+        // 导出权利义务
+        function exportClaims() {
+            const claims = [];
+            document.querySelectorAll('.claim-node').forEach(node => {
+                const claimId = node.dataset.claimId;
+                const claimType = node.dataset.claimType;
+                const parentId = node.dataset.parent;
+                const features = [];
+                const isImportant = node.querySelector('.star-icon.active') !== null;
+                
+                node.querySelectorAll('.feature-item span').forEach(span => {
+                    const featureText = span.textContent;
+                    const isInventionPoint = span.parentElement.parentElement.querySelector('.star-icon.active') !== null;
+                    features.push({
+                        text: featureText,
+                        isInventionPoint: isInventionPoint
+                    });
+                });
+                
+                claims.push({
+                    id: claimId,
+                    type: claimType,
+                    parent: parentId,
+                    features: features,
+                    isImportant: isImportant
+                });
+            });
+            
+            const exportData = {
+                title: '基于深度学习的智能语音识别系统',
+                claims: claims,
+                exportTime: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'claims-tree.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateClaimHierarchy();
+        });
+    </script>
+</body>
+</html>
