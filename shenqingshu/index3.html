@@ -323,11 +323,11 @@
                     <!-- 优化说明文字 -->
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">新建申请书</h3>
-                        <p class="text-gray-600 text-sm">请选择或上传新的交底书文件，AI将辅助生成符合专利申请要求的文档。</p>
+                        <p class="text-gray-600 text-sm">请选择交底书文件，AI将辅助生成符合专利申请要求的文档。</p>
                     </div>
                     
                     <!-- 改进的标签页设计 -->
-                    <div class="bg-white p-1 rounded-lg mb-6 inline-flex">
+                    <div class="bg-white p-1 rounded-lg mb-6 inline-flex hidden">
                         <button id="textTab" class="tab-button tab-active flex items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200">
                             <i class="ri-history-line mr-2"></i>
                             <span>选择交底书</span>
@@ -338,100 +338,97 @@
                         </button>
                     </div>
                 
-                    <!-- 历史交底书列表 -->
-                    <div id="disclosureList" class="h-96 overflow-y-auto border border-gray-200 rounded-xl p-4 bg-white">
-                        <!-- 显示搜索交底书框和交底书总数 -->
-                        <div class="flex justify-between items-center mb-4">
-                            <div class="relative">
-                                <input type="text" id="searchInput" placeholder="搜索交底书档案记录..."
-                                    class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm 
-                                            placeholder-gray-400 focus:outline-none focus:border-purple-500">
-                                <i class="ri-search-line absolute top-1/2 transform -translate-y-1/2 left-4 text-gray-400"></i>
+                    <!-- 历史交底书列表 - 修改为左右分栏布局 -->
+                    <h3 class="px-4 py-4 text-sm font-medium rounded-md">选择交底书</h3>
+                    <div id="disclosureList" class="h-96 border border-gray-200 rounded-xl bg-white flex">
+                        <!-- 左侧：交底书列表（主要区域） -->
+                        <div class="w-3/5 border-r border-gray-200 bg-white">
+                            <div class="p-4">
+                                <!-- 显示搜索交底书框和交底书总数 -->
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="relative flex-1 mr-4">
+                                        <input type="text" id="searchInput" placeholder="搜索交底书档案记录..."
+                                            class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm 
+                                                    placeholder-gray-400 focus:outline-none focus:border-purple-500">
+                                        <i class="ri-search-line absolute top-1/2 transform -translate-y-1/2 left-4 text-gray-400"></i>
+                                    </div>
+                                    <span id="totalDisclosures" class="text-xs text-gray-500 whitespace-nowrap">共 10 条</span>
+                                </div>
+                                <div class="space-y-3 overflow-y-auto h-80">
+                                    <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md" data-disclosure-id="1">
+                                        <div class="flex items-center">
+                                            <div class="flex-1">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <h5 class="text-sm font-semibold text-gray-900">智能语音识别系统</h5>
+                                                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">我创建的</span>
+                                                </div>
+                                                <p class="text-xs text-gray-500">修改时间：2024-01-15</p>
+                                            </div>
+                                            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="ri-arrow-right-s-line text-blue-500 text-lg"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md" data-disclosure-id="2">
+                                        <div class="flex items-center">
+                                            <div class="flex-1">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <h5 class="text-sm font-semibold text-gray-900">区块链数据存储方法</h5>
+                                                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">我创建的</span>
+                                                </div>
+                                                <p class="text-xs text-gray-500">修改时间：2024-01-20</p>
+                                            </div>
+                                            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="ri-arrow-right-s-line text-blue-500 text-lg"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md" data-disclosure-id="3">
+                                        <div class="flex items-center">
+                                            <div class="flex-1">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <h5 class="text-sm font-semibold text-gray-900">机器学习算法优化</h5>
+                                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">他人分享的</span>
+                                                </div>
+                                                <div class="flex items-center space-x-4">
+                                                    <p class="text-xs text-gray-500">修改时间：2024-01-25</p>
+                                                    <p class="text-xs text-gray-500">分享人：XXX账号</p>
+                                                </div>
+                                            </div>
+                                            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="ri-arrow-right-s-line text-blue-500 text-lg"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <span id="totalDisclosures" class="text-sm text-gray-500">共 10 条交底书档案记录</span>
                         </div>
-                        <div class="space-y-3 overflow-y-auto">
-                            <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200">
-                                <div class="flex items-center">
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <h5 class="text-sm font-medium text-gray-900">智能语音识别系统</h5>
-                                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">我创建的</span>
-                                        </div>
-                                        <p class="text-xs text-gray-500">创建时间：2024-01-15</p>
+                        
+                        <!-- 右侧：查新对比记录列表（次要区域） -->
+                        <div class="w-2/5 bg-gray-50">
+                            <div class="p-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="flex items-center">
+                                        <i class="ri-link text-gray-400 mr-2"></i>
+                                        <h4 class="text-sm font-medium text-gray-700">关联查新记录</h4>
                                     </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <i class="ri-arrow-right-s-line text-gray-400"></i>
-                                    </div>
+                                    <span id="totalNoveltyRecords" class="text-xs text-gray-400">共 0 条</span>
                                 </div>
-                            </div>
-                            
-                            <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200">
-                                <div class="flex items-center">
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <h5 class="text-sm font-medium text-gray-900">区块链数据存储方法</h5>
-                                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">我创建的</span>
-                                        </div>
-                                        <p class="text-xs text-gray-500">创建时间：2024-01-20</p>
+                                
+                                <!-- 未选择交底书时的提示 -->
+                                <div id="noDisclosureSelected" class="flex flex-col items-center justify-center h-80 text-center">
+                                    <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                                        <i class="ri-file-search-line text-xl text-gray-400"></i>
                                     </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <i class="ri-arrow-right-s-line text-gray-400"></i>
-                                    </div>
+                                    <p class="text-gray-400 text-sm mb-1">请先选择左侧的交底书</p>
+                                    <p class="text-gray-300 text-xs">选择后将显示对应的查新记录</p>
                                 </div>
-                            </div>
-                            
-                            <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200">
-                                <div class="flex items-center">
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <h5 class="text-sm font-medium text-gray-900">机器学习算法优化</h5>
-                                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">他人分享的</span>
-                                        </div>
-                                        <div class="flex items-center space-x-4">
-                                            <p class="text-xs text-gray-500">创建时间：2024-01-25</p>
-                                            <p class="text-xs text-gray-500">分享人：XXX账号</p>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <i class="ri-arrow-right-s-line text-gray-400"></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200">
-                                <div class="flex items-center">
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <h5 class="text-sm font-medium text-gray-900">机器学习算法优化</h5>
-                                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">他人分享的</span>
-                                        </div>
-                                        <div class="flex items-center space-x-4">
-                                            <p class="text-xs text-gray-500">创建时间：2024-01-25</p>
-                                            <p class="text-xs text-gray-500">分享人：XXX账号</p>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <i class="ri-arrow-right-s-line text-gray-400"></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200">
-                                <div class="flex items-center">
-                                    <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-1">
-                                            <h5 class="text-sm font-medium text-gray-900">机器学习算法优化</h5>
-                                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">他人分享的</span>
-                                        </div>
-                                        <div class="flex items-center space-x-4">
-                                            <p class="text-xs text-gray-500">创建时间：2024-01-25</p>
-                                            <p class="text-xs text-gray-500">分享人：XXX账号</p>
-                                        </div>
-                                    </div>
-                                    <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <i class="ri-arrow-right-s-line text-gray-400"></i>
-                                    </div>
+                                
+                                <!-- 查新记录列表 -->
+                                <div id="noveltyRecordsList" class="hidden space-y-2 overflow-y-auto h-80">
+                                    <!-- 查新记录项将通过JavaScript动态生成 -->
                                 </div>
                             </div>
                         </div>
@@ -586,26 +583,147 @@
             window.open('editor.html?step=' + step, '_blank');
         }
 
-        // 选择交底书逻辑
-        const disclosureItems = document.querySelectorAll('.disclosure-item');
+        // 全局变量
         let selectedDisclosure = null;
-        disclosureItems.forEach(item => {
+        let selectedNoveltyRecord = null;
+        
+        // 模拟查新记录数据
+        const noveltyRecordsData = {
+            1: [
+                {
+                    id: 'nr001',
+                    title: '创建人：40374503@qq.com',
+                    createTime: '2024-01-16',
+                    status: '已完成',
+                    conclusion: '具有新颖性'
+                },
+                {
+                    id: 'nr002', 
+                    title: '创建人：luojia@ourchem.com',
+                    createTime: '2024-01-14',
+                    status: '已完成',
+                    conclusion: '部分新颖'
+                }
+            ],
+            2: [
+                {
+                    id: 'nr003',
+                    title: '创建人：40374503@qq.com',
+                    createTime: '2024-01-21',
+                    status: '已完成', 
+                    conclusion: '具有新颖性'
+                }
+            ],
+            3: [
+                {
+                    id: 'nr004',
+                    title: '创建人：is01lj@163.com',
+                    createTime: '2024-01-26',
+                    status: '进行中',
+                    conclusion: '待确定'
+                }
+            ]
+        };
+        
+        // 交底书选择处理
+        document.querySelectorAll('.disclosure-item').forEach(item => {
             item.addEventListener('click', function() {
                 // 移除之前的选中状态
-                if (selectedDisclosure) {
-                    selectedDisclosure.classList.remove('selected');
-                }
+                document.querySelectorAll('.disclosure-item').forEach(el => {
+                    el.classList.remove('border-blue-500', 'bg-blue-50');
+                    el.classList.add('border-gray-200');
+                });
                 
                 // 添加选中状态
-                this.classList.add('selected');
+                this.classList.remove('border-gray-200');
+                this.classList.add('border-blue-500', 'bg-blue-50');
+                
                 selectedDisclosure = this;
+                const disclosureId = this.getAttribute('data-disclosure-id');
+                
+                // 显示对应的查新记录
+                showNoveltyRecords(disclosureId);
                 
                 // 更新按钮状态
                 updateCreateButtonState();
             });
         });
         
-        // 统一的按钮状态更新函数
+        // 显示查新记录
+        function showNoveltyRecords(disclosureId) {
+            const noDisclosureSelected = document.getElementById('noDisclosureSelected');
+            const noveltyRecordsList = document.getElementById('noveltyRecordsList');
+            const totalNoveltyRecords = document.getElementById('totalNoveltyRecords');
+            
+            const records = noveltyRecordsData[disclosureId] || [];
+            
+            if (records.length === 0) {
+                noDisclosureSelected.innerHTML = `
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="ri-file-search-line text-2xl text-gray-400"></i>
+                    </div>
+                    <p class="text-gray-500 text-sm mb-2">暂无查新记录</p>
+                    <p class="text-gray-400 text-xs">该交底书还没有进行查新对比</p>
+                `;
+                noDisclosureSelected.classList.remove('hidden');
+                noveltyRecordsList.classList.add('hidden');
+                totalNoveltyRecords.textContent = '共 0 条';
+                return;
+            }
+            
+            // 隐藏提示，显示记录列表
+            noDisclosureSelected.classList.add('hidden');
+            noveltyRecordsList.classList.remove('hidden');
+            totalNoveltyRecords.textContent = `共 ${records.length} 条`;
+            
+            // 生成查新记录列表
+            noveltyRecordsList.innerHTML = records.map((record, index) => `
+                <div class="novelty-record-item group p-3 rounded-xl border-2 ${index === 0 ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-300 hover:bg-green-50 cursor-pointer transition-all duration-200" data-record-id="${record.id}">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-1">
+                                <h5 class="text-sm font-medium text-gray-900">${record.title}</h5>
+                                <span class="text-xs ${record.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded-full">${record.status}</span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <p class="text-xs text-gray-500">修改时间：${record.createTime}</p>
+                                
+                            </div>
+                        </div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="ri-arrow-right-s-line text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 默认选择第一个查新记录
+            if (records.length > 0) {
+                selectedNoveltyRecord = records[0];
+                // 为查新记录添加点击事件
+                document.querySelectorAll('.novelty-record-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        // 移除之前的选中状态
+                        document.querySelectorAll('.novelty-record-item').forEach(el => {
+                            el.classList.remove('border-green-500', 'bg-green-50');
+                            el.classList.add('border-gray-200');
+                        });
+                        
+                        // 添加选中状态
+                        this.classList.remove('border-gray-200');
+                        this.classList.add('border-green-500', 'bg-green-50');
+                        
+                        const recordId = this.getAttribute('data-record-id');
+                        selectedNoveltyRecord = records.find(r => r.id === recordId);
+                        
+                        // 更新按钮状态
+                        updateCreateButtonState();
+                    });
+                });
+            }
+        }
+        
+        // 更新创建按钮状态函数
         function updateCreateButtonState() {
             const createBtn = document.getElementById('create-btn');
             const textTabActive = document.getElementById('textTab').classList.contains('tab-active');
@@ -613,7 +731,7 @@
             
             let canProceed = false;
             
-            if (textTabActive && selectedDisclosure) {
+            if (textTabActive && selectedDisclosure && selectedNoveltyRecord) {
                 canProceed = true;
             } else if (fileTabActive && document.getElementById('file-items').children.length > 0) {
                 canProceed = true;
@@ -626,7 +744,7 @@
                 createBtn.classList.add('opacity-50');
             }
         }
-        
+
         // 文件上传处理
         const uploadArea = document.getElementById('upload-area');
         const fileInput = document.getElementById('file-input');
