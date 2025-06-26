@@ -209,8 +209,13 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
                     <!-- 编辑器标题栏 -->
                     <div class="border-b border-gray-100 px-4 py-2 flex items-center justify-between bg-gray-50">
-                        <div class="flex items-center space-x-3">
-                            <h3 id="editor-title" class="text-lg font-semibold text-gray-900">权利要求书</h3>
+                        <div class="flex flex-col space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <h3 id="editor-title" class="text-lg font-semibold text-gray-900">一种智能语音识别系统</h3>
+                                <button id="edit-title-btn" class="text-gray-400 hover:text-primary-600 transition-colors" onclick="editTitle()">
+                                    <i class="ri-edit-line text-sm"></i>
+                                </button>
+                            </div>
                             <span class="text-xs text-gray-500">最后编辑: 2023-06-15 15:45</span>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -221,6 +226,9 @@
                                 </button>
                                 <button id="shareBtn" class="py-1.5 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition duration-200 flex items-center">
                                     <i class="ri-share-line mr-1"></i> 分享
+                                </button>
+                                <button id="downloadBtn" class="py-1.5 px-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition duration-200 flex items-center">
+                                    <i class="ri-download-line mr-1"></i> 下载
                                 </button>
                             </div>
                         </div>
@@ -902,10 +910,10 @@
             }
             
             // 更新标题
-            const titleElement = document.getElementById('editor-title');
-            if (titleElement) {
-                titleElement.textContent = titleMap[type] || '文档编辑';
-            }
+            // const titleElement = document.getElementById('editor-title');
+            // if (titleElement) {
+            //     titleElement.textContent = titleMap[type] || '文档编辑';
+            // }
             
             // 更新导航状态
             updateNavState(type);

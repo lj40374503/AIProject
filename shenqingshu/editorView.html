@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申请书查看 - AI专利申请文本生成工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        .tab-active {
+            color: #0284c7;
+            border-bottom: 2px solid #0284c7;
+        }
+        .patent-item:hover {
+            background-color: #f0f9ff;
+        }
+        .patent-selected {
+            background-color: #e0f2fe;
+            border-left: 3px solid #0284c7;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 全局滚动条样式 - 适用于所有元素 */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(203, 213, 225, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        .content-display {
+            font-size: 14px;
+            line-height: 1.8;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+        .nav-item-active {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 主要内容区域 -->
+    <main class="flex flex-col h-screen overflow-hidden">
+        <div class="flex-1 flex overflow-hidden">
+            <!-- 左侧文档结构导航 -->
+            <div id="tree" class="w-16 bg-white rounded-xl shadow-sm border border-gray-100 p-3 h-full">
+                <ul class="document-tree space-y-3">
+                    <!-- 权利要求书 -->
+                    <li class="group relative">
+                        <div class="nav-item flex items-center justify-center px-2 py-2 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 cursor-pointer hover:from-blue-100 hover:to-cyan-100 transition-all duration-200 border border-blue-200" onclick="showContent('claims')">
+                            <i class="fas fa-gavel text-blue-600"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                权利要求书
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                    
+                    <!-- 说明书 -->
+                    <li class="group relative">
+                        <div class="nav-item flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-orange-300 text-orange-600 cursor-pointer hover:bg-orange-50 transition-all duration-200" onclick="showContent('specification')">
+                            <i class="fas fa-book text-orange-600"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                说明书
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+
+                    <!-- 摘要 -->
+                    <li class="group relative">
+                        <div class="nav-item flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-green-300 text-green-600 cursor-pointer hover:bg-green-50 transition-all duration-200" onclick="showContent('abstract')">
+                            <i class="fas fa-file-alt text-green-600"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                说明书摘要
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                    
+                    <!-- 说明书附图 -->
+                    <li class="group relative">
+                        <div class="nav-item flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-pink-300 text-pink-600 cursor-pointer hover:bg-pink-50 transition-all duration-200" onclick="showContent('drawings')">
+                            <i class="ri-image-line text-pink-600 text-lg"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                说明书附图
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                    
+                    <!-- 摘要附图 -->
+                    <li class="group relative">
+                        <div class="nav-item flex items-center justify-center px-2 py-2 rounded-lg border-2 border-dashed border-violet-300 text-violet-600 cursor-pointer hover:bg-violet-50 transition-all duration-200" onclick="showContent('abstract-drawings')">
+                            <i class="ri-image-2-line text-violet-600 text-lg"></i>
+                            <span class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg z-10 pointer-events-none">
+                                摘要附图
+                                <div class="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                            </span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 中间内容显示区域 -->
+            <div id="content-container" class="flex-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                    <!-- 内容标题栏 -->
+                    <div class="border-b border-gray-100 px-4 py-3 bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 id="content-title" class="text-lg font-semibold text-gray-900 mb-1">一种智能语音识别系统</h3>
+                                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                    <div class="flex items-center">
+                                        <i class="ri-user-line mr-1"></i>
+                                        <span>创建人: 40374503@qq.com</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="ri-time-line mr-1"></i>
+                                        <span>修改时间: 2023-06-15 15:45</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <!-- 操作按钮 -->
+                                <button class="py-1.5 px-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm transition duration-200 flex items-center">
+                                    <i class="ri-download-line mr-1"></i> 下载
+                                </button>
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 内容显示区 -->
+                    <div class="flex-1 overflow-y-auto">
+                        <div id="content-display" class="content-display">
+                            <!-- 权利要求书内容 -->
+                            <div id="claims-content">
+                                <h4 class="text-base font-semibold mb-4 text-gray-800">权利要求书</h4>
+                                <div class="space-y-4">
+                                    <div class="border-l-4 border-blue-500 pl-4">
+                                        <p class="font-medium text-gray-800 mb-2">1. 一种智能语音识别系统，其特征在于，包括：</p>
+                                        <div class="ml-4 space-y-2 text-gray-700">
+                                            <p>语音采集模块，用于采集用户的语音信号；</p>
+                                            <p>预处理模块，用于对所述语音信号进行降噪和特征提取；</p>
+                                            <p>识别引擎模块，用于基于深度学习算法对预处理后的语音信号进行识别，生成文本结果；</p>
+                                            <p>后处理模块，用于对识别结果进行语法纠错和语义优化。</p>
+                                        </div>
+                                    </div>
+                                    <div class="border-l-4 border-blue-400 pl-4">
+                                        <p class="font-medium text-gray-800 mb-2">2. 根据权利要求1所述的智能语音识别系统，其特征在于，</p>
+                                        <p class="ml-4 text-gray-700">所述识别引擎模块采用基于Transformer架构的神经网络模型，具备多语言识别能力。</p>
+                                    </div>
+                                    <div class="border-l-4 border-blue-300 pl-4">
+                                        <p class="font-medium text-gray-800 mb-2">3. 根据权利要求1所述的智能语音识别系统，其特征在于，</p>
+                                        <p class="ml-4 text-gray-700">还包括自适应学习模块，用于根据用户的语音特征和使用习惯持续优化识别准确率。</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 说明书内容 -->
+                            <div id="specification-content" style="display: none;">
+                                <h4 class="text-base font-semibold mb-4 text-gray-800">说明书</h4>
+                                <div class="space-y-6">
+                                    <section>
+                                        <h5 class="font-medium text-gray-800 mb-3">技术领域</h5>
+                                        <p class="text-gray-700 leading-relaxed">本发明涉及人工智能技术领域，特别是涉及一种智能语音识别系统。</p>
+                                    </section>
+                                    <section>
+                                        <h5 class="font-medium text-gray-800 mb-3">背景技术</h5>
+                                        <p class="text-gray-700 leading-relaxed">随着人工智能技术的快速发展，语音识别技术已经成为人机交互的重要方式。传统的语音识别系统在复杂环境下的识别准确率有待提高，特别是在噪声环境和多语言场景下表现不佳。</p>
+                                    </section>
+                                    <section>
+                                        <h5 class="font-medium text-gray-800 mb-3">发明内容</h5>
+                                        <p class="text-gray-700 leading-relaxed">本发明的目的是提供一种智能语音识别系统，以解决现有技术中语音识别准确率不高的问题。</p>
+                                        <p class="text-gray-700 leading-relaxed mt-3">为实现上述目的，本发明提供了一种智能语音识别系统，包括语音采集模块、预处理模块、识别引擎模块和后处理模块。</p>
+                                    </section>
+                                </div>
+                            </div>
+
+                            <!-- 摘要内容 -->
+                            <div id="abstract-content" style="display: none;">
+                                <h4 class="text-base font-semibold mb-4 text-gray-800">说明书摘要</h4>
+                                <p class="text-gray-700 leading-relaxed">本发明公开了一种智能语音识别系统，包括语音采集模块、预处理模块、识别引擎模块和后处理模块。该系统采用基于Transformer架构的深度学习算法，具备多语言识别能力和自适应学习功能，能够在复杂环境下实现高准确率的语音识别。本发明解决了传统语音识别系统在噪声环境和多语言场景下识别准确率不高的技术问题。</p>
+                            </div>
+
+                            <!-- 说明书附图内容 -->
+                            <div id="drawings-content" style="display: none;">
+                                <h4 class="text-base font-semibold mb-4 text-gray-800">说明书附图</h4>
+                                <div class="space-y-4">
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <h6 class="font-medium text-gray-800 mb-2">图1 系统整体架构图</h6>
+                                        <div class="bg-gray-100 h-48 rounded flex items-center justify-center text-gray-500">
+                                            <i class="ri-image-line text-4xl"></i>
+                                            <span class="ml-2">系统架构示意图</span>
+                                        </div>
+                                    </div>
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <h6 class="font-medium text-gray-800 mb-2">图2 语音处理流程图</h6>
+                                        <div class="bg-gray-100 h-48 rounded flex items-center justify-center text-gray-500">
+                                            <i class="ri-image-line text-4xl"></i>
+                                            <span class="ml-2">处理流程示意图</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 摘要附图内容 -->
+                            <div id="abstract-drawings-content" style="display: none;">
+                                <h4 class="text-base font-semibold mb-4 text-gray-800">摘要附图</h4>
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="bg-gray-100 h-64 rounded flex items-center justify-center text-gray-500">
+                                        <i class="ri-image-line text-4xl"></i>
+                                        <span class="ml-2">摘要附图</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 内容映射
+        const contentMap = {
+            'claims': {
+                title: '权利要求书',
+                contentId: 'claims-content'
+            },
+            'specification': {
+                title: '说明书',
+                contentId: 'specification-content'
+            },
+            'abstract': {
+                title: '说明书摘要',
+                contentId: 'abstract-content'
+            },
+            'drawings': {
+                title: '说明书附图',
+                contentId: 'drawings-content'
+            },
+            'abstract-drawings': {
+                title: '摘要附图',
+                contentId: 'abstract-drawings-content'
+            }
+        };
+
+        // 显示指定内容
+        function showContent(type) {
+            // 隐藏所有内容
+            Object.values(contentMap).forEach(item => {
+                const element = document.getElementById(item.contentId);
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+
+            // 显示选中的内容
+            const selectedContent = contentMap[type];
+            if (selectedContent) {
+                const element = document.getElementById(selectedContent.contentId);
+                if (element) {
+                    element.style.display = 'block';
+                }
+                
+                
+            }
+
+            // 更新导航状态
+            updateNavState(type);
+        }
+
+        // 更新导航状态
+        function updateNavState(activeType) {
+            // 移除所有激活状态
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('nav-item-active');
+            });
+
+            // 添加激活状态到当前选中项
+            const typeIndex = {
+                'claims': 0,
+                'specification': 1,
+                'abstract': 2,
+                'drawings': 3,
+                'abstract-drawings': 4
+            };
+
+            const index = typeIndex[activeType];
+            if (index !== undefined && navItems[index]) {
+                navItems[index].classList.add('nav-item-active');
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 默认显示权利要求书
+            showContent('claims');
+        });
+    </script>
+</body>
+</html>
