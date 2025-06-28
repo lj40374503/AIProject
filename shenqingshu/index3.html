@@ -346,13 +346,13 @@
                             <div class="p-4">
                                 <!-- 显示搜索交底书框和交底书总数 -->
                                 <div class="flex justify-between items-center mb-4">
-                                    <div class="relative flex-1 mr-4">
+                                    <div class="relative">
                                         <input type="text" id="searchInput" placeholder="搜索交底书档案记录..."
                                             class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm 
                                                     placeholder-gray-400 focus:outline-none focus:border-purple-500">
                                         <i class="ri-search-line absolute top-1/2 transform -translate-y-1/2 left-4 text-gray-400"></i>
                                     </div>
-                                    <span id="totalDisclosures" class="text-xs text-gray-500 whitespace-nowrap">共 10 条</span>
+                                    <span id="totalDisclosures" class="text-sm text-gray-500">共 10 条记录</span>                       
                                 </div>
                                 <div class="space-y-3 overflow-y-auto h-80">
                                     <div class="disclosure-item group p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md" data-disclosure-id="1">
@@ -596,13 +596,6 @@
                     createTime: '2024-01-16',
                     status: '已完成',
                     conclusion: '具有新颖性'
-                },
-                {
-                    id: 'nr002', 
-                    title: '创建人：luojia@ourchem.com',
-                    createTime: '2024-01-14',
-                    status: '已完成',
-                    conclusion: '部分新颖'
                 }
             ],
             2: [
@@ -610,18 +603,11 @@
                     id: 'nr003',
                     title: '创建人：40374503@qq.com',
                     createTime: '2024-01-21',
-                    status: '已完成', 
+                    status: '查新中', 
                     conclusion: '具有新颖性'
                 }
             ],
             3: [
-                {
-                    id: 'nr004',
-                    title: '创建人：is01lj@163.com',
-                    createTime: '2024-01-26',
-                    status: '进行中',
-                    conclusion: '待确定'
-                }
             ]
         };
         
@@ -649,6 +635,10 @@
             });
         });
         
+        function goToChaxin(){
+            window.location.href = '../jiaodishu/chaxin.html';
+        }
+
         // 显示查新记录
         function showNoveltyRecords(disclosureId) {
             const noDisclosureSelected = document.getElementById('noDisclosureSelected');
@@ -656,73 +646,83 @@
             const totalNoveltyRecords = document.getElementById('totalNoveltyRecords');
             
             const records = noveltyRecordsData[disclosureId] || [];
+            const record = records.length > 0 ? records[0] : null; // 每个交底书只有一条记录
             
-            if (records.length === 0) {
+            if (!record) {
+                // 没有查新记录的情况
                 noDisclosureSelected.innerHTML = `
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                        <i class="ri-file-search-line text-2xl text-gray-400"></i>
+                    <div class="flex flex-col items-center justify-center h-full">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="ri-file-search-line text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-2">暂无查新记录</p>
+                        <p class="text-gray-400 text-xs mb-4">该交底书还没有进行查新对比</p>
+                        <button onclick="goToChaxin()" class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors">
+                            去查新
+                        </button>
                     </div>
-                    <p class="text-gray-500 text-sm mb-2">暂无查新记录</p>
-                    <p class="text-gray-400 text-xs">该交底书还没有进行查新对比</p>
                 `;
                 noDisclosureSelected.classList.remove('hidden');
                 noveltyRecordsList.classList.add('hidden');
                 totalNoveltyRecords.textContent = '共 0 条';
+                
+                // 重置选中的查新记录
+                selectedNoveltyRecord = null;
+                updateCreateButtonState();
                 return;
             }
             
-            // 隐藏提示，显示记录列表
+            // 有查新记录的情况
             noDisclosureSelected.classList.add('hidden');
             noveltyRecordsList.classList.remove('hidden');
-            totalNoveltyRecords.textContent = `共 ${records.length} 条`;
+            totalNoveltyRecords.textContent = '共 1 条';
             
-            // 生成查新记录列表
-            noveltyRecordsList.innerHTML = records.map((record, index) => `
-                <div class="novelty-record-item group p-3 rounded-xl border-2 ${index === 0 ? 'border-green-500 bg-green-50' : 'border-gray-200'} hover:border-green-300 hover:bg-green-50 cursor-pointer transition-all duration-200" data-record-id="${record.id}">
-                    <div class="flex items-center">
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-1">
-                                <h5 class="text-sm font-medium text-gray-900">${record.title}</h5>
-                                <span class="text-xs ${record.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded-full">${record.status}</span>
+            // 根据查新状态显示不同内容
+            if (record.status === '已完成') {
+                // 查新已完成，显示正常的查新记录
+                noveltyRecordsList.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                <i class="ri-check-line text-2xl text-green-600"></i>
                             </div>
-                            <div class="flex items-center space-x-4">
-                                <p class="text-xs text-gray-500">修改时间：${record.createTime}</p>
-                                
+                            <h5 class="text-sm font-medium text-gray-900 mb-2">查新已完成</h5>
+                            <p class="text-xs text-gray-500 mb-4">修改时间：${record.createTime}</p>
+                            <div>
                             </div>
-                        </div>
-                        <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i class="ri-arrow-right-s-line text-gray-400"></i>
                         </div>
                     </div>
-                </div>
-            `).join('');
-            
-            // 默认选择第一个查新记录
-            if (records.length > 0) {
-                selectedNoveltyRecord = records[0];
-                // 为查新记录添加点击事件
-                document.querySelectorAll('.novelty-record-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        // 移除之前的选中状态
-                        document.querySelectorAll('.novelty-record-item').forEach(el => {
-                            el.classList.remove('border-green-500', 'bg-green-50');
-                            el.classList.add('border-gray-200');
-                        });
-                        
-                        // 添加选中状态
-                        this.classList.remove('border-gray-200');
-                        this.classList.add('border-green-500', 'bg-green-50');
-                        
-                        const recordId = this.getAttribute('data-record-id');
-                        selectedNoveltyRecord = records.find(r => r.id === recordId);
-                        
-                        // 更新按钮状态
-                        updateCreateButtonState();
-                    });
-                });
+                `;
+
+                // 设置选中的查新记录
+                selectedNoveltyRecord = record;
+                
+                
+            } else {
+                // 查新进行中或其他状态
+                noveltyRecordsList.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                <i class="ri-time-line text-2xl text-yellow-600"></i>
+                            </div>
+                            <h5 class="text-sm font-medium text-gray-900 mb-2">查新进行中</h5>
+                            <p class="text-xs text-gray-500 mb-4">创建时间：${record.createTime}</p>
+                            <button onclick="goToChaxin()" class="px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors">
+                                去查新
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // 查新未完成时，不设置选中记录
+                selectedNoveltyRecord = null;
             }
+            
+            // 更新按钮状态
+            updateCreateButtonState();
         }
-        
+
         // 更新创建按钮状态函数
         function updateCreateButtonState() {
             const createBtn = document.getElementById('create-btn');
